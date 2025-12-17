@@ -1,0 +1,5 @@
+{
+  "name": "Have I Been Sniped?",
+  "description": "A League of Legends tool to check if you have played with or against your current lobby members in your last 100 matches.",
+  "requestFramePermissions": []
+}
