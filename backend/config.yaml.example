@@ -1,0 +1,21 @@
+# Riot Games API Configuration
+# Get your API key from: https://developer.riotgames.com/
+
+riot_api_key: "RGAPI-YOUR-API-KEY-HERE"
+
+# Server configuration
+port: 5000
+
+# CORS origins (add your frontend URLs)
+cors_origins:
+  - "http://localhost:5173"
+  - "http://localhost:3000"
+  - "http://localhost:4000"
+
+# Cache settings
+cache_enabled: true
+cache_ttl: 300  # seconds
+
+# Rate limiting
+rate_limit_per_second: 19  # Stay under Riot's 20 req/sec limit
+

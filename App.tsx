@@ -35,7 +35,7 @@ const App: React.FC = () => {
 
       // 2. Fetch History & Cross-reference
       const userPuuid = game.participants.find(p => p.summonerName.toLowerCase() === name.toLowerCase())?.puuid || 'user-puuid';
-      const snipes = await RiotService.analyzeSnipes(userPuuid, game.participants);
+      const snipes = await RiotService.analyzeSnipes(userPuuid, game.participants, region);
       
       setSnipedPlayers(snipes);
     } catch (err) {
@@ -130,7 +130,7 @@ const App: React.FC = () => {
             </div>
             <div className="flex flex-col items-center md:items-end gap-2">
               <div className="text-zinc-400 text-sm font-medium">
-                created by <span className="text-indigo-400">jasperan</span> using <span className="text-purple-400">Gemini</span>
+                created by <span className="text-indigo-400">jasperan</span>
               </div>
               <div className="text-zinc-600 text-[10px] max-w-md text-center md:text-right uppercase tracking-[0.2em] font-bold">
                 HaveIBeenSniped isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing League of Legends.
