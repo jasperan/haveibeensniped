@@ -23,11 +23,23 @@ except FileNotFoundError:
 
 # Setup CORS with proper configuration
 cors_origins = config.get('cors_origins', ['http://localhost:5173', 'http://localhost:4000'])
-CORS(app, 
-     origins=cors_origins,
-     methods=['GET', 'POST', 'OPTIONS'],
-     allow_headers=['Content-Type', 'Authorization'],
-     supports_credentials=True)
+# Allow all origins in development if explicitly configured
+allow_all_origins = config.get('allow_all_cors_origins', False)
+
+if allow_all_origins:
+    # Development mode: allow all origins
+    CORS(app, 
+         resources={r"/api/*": {"origins": "*"}},
+         methods=['GET', 'POST', 'OPTIONS'],
+         allow_headers=['Content-Type', 'Authorization'],
+         supports_credentials=False)
+else:
+    # Production mode: specific origins only
+    CORS(app, 
+         origins=cors_origins,
+         methods=['GET', 'POST', 'OPTIONS'],
+         allow_headers=['Content-Type', 'Authorization'],
+         supports_credentials=True)
 
 # Initialize Riot API client
 api_key = config.get('riot_api_key')
@@ -82,8 +94,11 @@ def health_check():
     return jsonify({'status': 'healthy', 'message': 'Backend is running'})
 
 
-@app.route('/api/check-game', methods=['POST'])
+@app.route('/api/check-game', methods=['POST', 'OPTIONS'])
 def check_game():
+    # Handle preflight OPTIONS request
+    if request.method == 'OPTIONS':
+        return '', 200
     """
     Check if a player is in a live game
     
@@ -160,8 +175,11 @@ def check_game():
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/api/analyze-snipes', methods=['POST'])
+@app.route('/api/analyze-snipes', methods=['POST', 'OPTIONS'])
 def analyze_snipes():
+    # Handle preflight OPTIONS request
+    if request.method == 'OPTIONS':
+        return '', 200
     """
     Analyze match history to find players who appear in both
     the current lobby and the user's recent matches
