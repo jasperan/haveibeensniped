@@ -108,6 +108,21 @@ haveibeensniped/
 
 ## Development
 
+
+## Interactive CLI
+
+The project now includes an interactive CLI for managing configuration and running checks without starting the server.
+
+```bash
+python backend/cli.py
+```
+
+**Features:**
+- **Query User:** Check if a player is in an active game and scan for snipers.
+- **Manage Configuration:** Update your Riot API Key securely.
+- **Check Integrity:** Validate your API Key against the Riot API.
+- **Memory:** Remembers your last queried player for quick access.
+
 ### API Endpoints
 
 - `POST /api/check-game` - Check if player is in a live game
