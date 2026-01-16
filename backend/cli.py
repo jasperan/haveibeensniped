@@ -18,6 +18,7 @@ from rich.table import Table
 from rich.panel import Panel
 from rich.prompt import Prompt, Confirm
 from rich.progress import Progress, SpinnerColumn, TextColumn
+import questionary
 
 console = Console()
 CONFIG_FILE = os.path.join(os.path.dirname(__file__), 'config.yaml')
@@ -230,21 +231,21 @@ def main_menu():
     while True:
         print_header()
         
-        table = Table(show_header=False, box=None)
-        table.add_column("Id", style="cyan", justify="right")
-        table.add_column("Task", style="white")
+        choices = [
+            questionary.Choice("Query User (Active Game & Snipes)", value="1"),
+            questionary.Choice("Manage Configuration (API Key)", value="2"),
+            questionary.Choice("Check Integrity (Validate connection)", value="3"),
+            questionary.Separator(),
+            questionary.Choice("Exit", value="0")
+        ]
         
-        table.add_row("[1]", "Query User (Active Game & Snipes)")
-        table.add_row("[2]", "Manage Configuration (API Key)")
-        table.add_row("[3]", "Check Integrity (Validate connection)")
-        table.add_row("[0]", "Exit")
+        choice = questionary.select(
+            "Select a Task:",
+            choices=choices,
+            use_arrow_keys=True
+        ).ask()
         
-        console.print(table)
-        console.print("\n")
-        
-        choice = Prompt.ask("Enter choice", choices=["1", "2", "3", "0"], default="1")
-        
-        if choice == "0":
+        if not choice or choice == "0":
             console.print("[yellow]Goodbye![/yellow]")
             break
         elif choice == "1":
