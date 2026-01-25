@@ -53,8 +53,8 @@ def get_riot_client(config: Dict) -> Optional[RiotAPIClient]:
 def print_header():
     console.clear()
     console.print(Panel.fit(
-        "[bold red]HAVE I BEEN SNIPED?[/bold red]\n[dim]League of Legends Match Analyzer[/dim]",
-        border_style="red"
+        "[bold cyan]HAVE I BEEN SNIPED?[/bold cyan]\n[dim]League of Legends Match Analyzer[/dim]",
+        border_style="cyan"
     ))
 
 def manage_config():

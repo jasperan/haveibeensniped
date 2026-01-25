@@ -117,6 +117,20 @@ The project now includes an interactive CLI for managing configuration and runni
 python backend/cli.py
 ```
 
+**Interactive Experience:**
+```text
+╭──────────────────────────────────╮
+│ HAVE I BEEN SNIPED?              │
+│ League of Legends Match Analyzer │
+╰──────────────────────────────────╯
+
+? Select a Task:
+  Query User (Active Game & Snipes)
+  Manage Configuration (API Key)
+  Check Integrity (Validate connection)
+  Exit
+```
+
 **Features:**
 - **Query User:** Check if a player is in an active game and scan for snipers.
 - **Manage Configuration:** Update your Riot API Key securely.

@@ -39,4 +39,8 @@ backend/.venv
 # Python
 *.py[cod]
 *$py.class
-__pycache__/
+__pycache__/CLAUDE.md
+
+# Claude-generated plan documents
+docs/plans/
+CLAUDE.md
