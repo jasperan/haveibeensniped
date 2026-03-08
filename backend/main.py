@@ -28,14 +28,14 @@ allow_all_origins = config.get('allow_all_cors_origins', False)
 
 if allow_all_origins:
     # Development mode: allow all origins
-    CORS(app, 
+    CORS(app,
          resources={r"/api/*": {"origins": "*"}},
          methods=['GET', 'POST', 'OPTIONS'],
          allow_headers=['Content-Type', 'Authorization'],
          supports_credentials=False)
 else:
     # Production mode: specific origins only
-    CORS(app, 
+    CORS(app,
          origins=cors_origins,
          methods=['GET', 'POST', 'OPTIONS'],
          allow_headers=['Content-Type', 'Authorization'],
@@ -101,14 +101,14 @@ def check_game():
         return '', 200
     """
     Check if a player is in a live game
-    
+
     Request body:
     {
         "gameName": "PlayerName",
         "tagLine": "TAG",
         "region": "NA1"
     }
-    
+
     Returns:
     {
         "gameId": 123456,
@@ -122,25 +122,25 @@ def check_game():
         game_name = data.get('gameName')
         tag_line = data.get('tagLine')
         region = data.get('region', 'NA1')
-        
+
         if not game_name or not tag_line:
             return jsonify({'error': 'Missing gameName or tagLine'}), 400
-        
+
         # Step 1: Get PUUID using account API
         # Endpoint: GET /riot/account/v1/accounts/by-riot-id/{gameName}/{tagLine}
         # gameName = part to left of "#", tagLine = part to right of "#"
         puuid = riot_client.get_puuid_by_riot_id(game_name, tag_line, region)
         if not puuid:
             return jsonify({'error': 'Player not found'}), 404
-        
+
         # Step 2: Check for active game using spectator API
         # Endpoint: GET /lol/spectator/v5/active-games/by-summoner/{encryptedPUUID}
         # encryptedPUUID = the PUUID obtained from step 1
         game_data = riot_client.get_active_game(puuid, region)
-        
+
         if not game_data:
             return jsonify({'error': 'Player not in a live game', 'inGame': False}), 200
-        
+
         # Format response to match frontend expectations
         participants = []
         for participant in game_data.get('participants', []):
@@ -151,7 +151,7 @@ def check_game():
             else:
                 name = participant.get('summonerName', 'Unknown')
                 tag = participant.get('riotIdTagline', 'NA1')
-            
+
             participants.append({
                 'summonerName': name,
                 'tagLine': tag,
@@ -159,7 +159,7 @@ def check_game():
                 'championId': participant.get('championId', 0),
                 'teamId': participant.get('teamId', 100)
             })
-        
+
         response = {
             'gameId': game_data.get('gameId'),
             'gameMode': game_data.get('gameMode', 'CLASSIC'),
@@ -167,12 +167,12 @@ def check_game():
             'participants': participants,
             'inGame': True
         }
-        
+
         return jsonify(response), 200
-        
+
     except Exception as e:
         print(f"Error in check_game: {e}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 @app.route('/api/analyze-snipes', methods=['POST', 'OPTIONS'])
@@ -183,17 +183,20 @@ def analyze_snipes():
     """
     Analyze match history to find players who appear in both
     the current lobby and the user's recent matches
-    
+
     Request body:
     {
         "userPuuid": "abc123...",
         "participants": [
-            {"puuid": "xyz789...", "summonerName": "Player", "tagLine": "TAG", "championId": 1, "teamId": 100},
+            {
+                "puuid": "xyz789...", "summonerName": "Player",
+                "tagLine": "TAG", "championId": 1, "teamId": 100
+            },
             ...
         ],
         "region": "NA1"
     }
-    
+
     Returns:
     [
         {
@@ -213,16 +216,16 @@ def analyze_snipes():
         user_puuid = data.get('userPuuid')
         participants = data.get('participants', [])
         region = data.get('region', 'NA1')
-        
+
         if not user_puuid or not participants:
             return jsonify({'error': 'Missing userPuuid or participants'}), 400
-        
+
         # Extract PUUIDs from participants
         lobby_puuids = [p['puuid'] for p in participants if p.get('puuid')]
-        
+
         # Analyze match history
         analysis = riot_client.analyze_match_history(user_puuid, lobby_puuids, region)
-        
+
         # Format response with participant info
         results = []
         for participant in participants:
@@ -239,17 +242,16 @@ def analyze_snipes():
                     'losses': analysis[puuid]['losses'],
                     'matches': analysis[puuid]['matches']
                 })
-        
+
         return jsonify(results), 200
-        
+
     except Exception as e:
         print(f"Error in analyze_snipes: {e}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 if __name__ == '__main__':
     port = config.get('port', 5000)
     print(f"Starting server on port {port}...")
     print(f"CORS enabled for: {config.get('cors_origins')}")
-    app.run(host='0.0.0.0', port=port, debug=True)
-
+    app.run(host='0.0.0.0', port=port, debug=os.getenv('FLASK_DEBUG', '').lower() in ('1', 'true'))
