@@ -96,6 +96,7 @@ const App: React.FC = () => {
   const [searchedUser, setSearchedUser] = useState<{ name: string; tag: string } | null>(null);
   const [liveClientStatus, setLiveClientStatus] = useState<LiveClientStatus>(DISCONNECTED_LIVE_CLIENT_STATUS);
   const [lastAutoScanFingerprint, setLastAutoScanFingerprint] = useState<string | null>(null);
+  const [lastScanSource, setLastScanSource] = useState<'manual' | 'auto' | null>(null);
 
   const snipedPlayers = useMemo(
     () => mapRepeatPlayersToSnipedPlayers(repeatPlayers),
@@ -111,9 +112,10 @@ const App: React.FC = () => {
     name: string,
     tag: string,
     region: Region,
-    options?: { clearExisting?: boolean },
+    options?: { clearExisting?: boolean; source?: 'manual' | 'auto' },
   ) => {
     const clearExisting = options?.clearExisting ?? true;
+    const source = options?.source ?? 'manual';
 
     setLoading(true);
     setError(null);
@@ -134,6 +136,7 @@ const App: React.FC = () => {
 
       setCurrentGame(mapScanCurrentGameToCurrentGame(scan.currentGame));
       setRepeatPlayers(scan.repeatPlayers);
+      setLastScanSource(source);
       return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred while communicating with the Riot API.');
@@ -145,7 +148,17 @@ const App: React.FC = () => {
   }, []);
 
   const handleSearch = async (name: string, tag: string, region: Region) => {
-    await runScan(name, tag, region, { clearExisting: true });
+    const didScan = await runScan(name, tag, region, { clearExisting: true, source: 'manual' });
+
+    if (
+      didScan
+      && liveClientStatus.canAutoScan
+      && liveClientStatus.sessionFingerprint
+      && liveClientStatus.matchedProfile?.gameName.toLowerCase() === name.toLowerCase()
+      && liveClientStatus.matchedProfile?.tagLine.toLowerCase() === tag.toLowerCase()
+    ) {
+      setLastAutoScanFingerprint(liveClientStatus.sessionFingerprint);
+    }
   };
 
   useEffect(() => {
@@ -160,6 +173,11 @@ const App: React.FC = () => {
 
         if (!status.inGame || !status.sessionFingerprint) {
           setLastAutoScanFingerprint(null);
+          if (lastScanSource === 'auto') {
+            setCurrentGame(null);
+            setRepeatPlayers([]);
+            setSelectedRepeatPlayer(null);
+          }
           return;
         }
 
@@ -175,7 +193,7 @@ const App: React.FC = () => {
           status.matchedProfile.gameName,
           status.matchedProfile.tagLine,
           status.matchedProfile.region,
-          { clearExisting: false },
+          { clearExisting: false, source: 'auto' },
         );
 
         if (!cancelled && didScan) {
@@ -197,7 +215,7 @@ const App: React.FC = () => {
       cancelled = true;
       window.clearInterval(intervalId);
     };
-  }, [lastAutoScanFingerprint, loading, runScan]);
+  }, [lastAutoScanFingerprint, lastScanSource, loading, runScan]);
 
   const handleInspectRepeatPlayer = (puuid: string) => {
     const player = repeatPlayers.find((candidate) => candidate.puuid === puuid);
