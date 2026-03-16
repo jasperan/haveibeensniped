@@ -109,3 +109,21 @@ export interface ScanResponse {
   currentGame: ScanCurrentGame | null;
   repeatPlayers: RepeatPlayer[];
 }
+
+export interface LiveClientPlayer {
+  riotId: string;
+  gameName: string;
+  tagLine: string;
+}
+
+export interface LiveClientStatus {
+  connected: boolean;
+  inGame: boolean;
+  activePlayer: LiveClientPlayer | null;
+  participantCount: number;
+  gameMode: string | null;
+  mapName: string | null;
+  sessionFingerprint: string | null;
+  matchedProfile: TrackedProfile | null;
+  canAutoScan: boolean;
+}

@@ -1,5 +1,6 @@
 import {
   CurrentGame,
+  LiveClientStatus,
   Region,
   RepeatPlayer,
   ScanCurrentGame,
@@ -83,6 +84,21 @@ export class RiotService {
       return await response.json() as ScanResponse;
     } catch (error) {
       console.error('Error scanning lobby:', error);
+      throw error;
+    }
+  }
+
+  static async getLiveClientStatus(): Promise<LiveClientStatus> {
+    try {
+      const response = await fetch(`${API_URL}/api/live-client/status`);
+
+      if (!response.ok) {
+        throw new Error(await getErrorMessage(response, 'Failed to read Live Client status'));
+      }
+
+      return await response.json() as LiveClientStatus;
+    } catch (error) {
+      console.error('Error reading Live Client status:', error);
       throw error;
     }
   }
