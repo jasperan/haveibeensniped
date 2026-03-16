@@ -3,6 +3,7 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
+from live_client import LiveClient
 from scan_service import ScanService
 
 
@@ -14,7 +15,19 @@ SCAN_ENDPOINT = {
 }
 
 
-def create_app(config: dict, riot_client=None, storage=None, scan_service=None):
+def disconnected_live_client_status():
+    return {
+        "connected": False,
+        "inGame": False,
+        "activePlayer": None,
+        "participantCount": 0,
+        "gameMode": None,
+        "mapName": None,
+        "sessionFingerprint": None,
+    }
+
+
+def create_app(config: dict, riot_client=None, storage=None, scan_service=None, live_client=None):
     """Create a configured Flask application instance."""
     app = Flask(__name__)
     app.config["CORS_ORIGINS"] = DEFAULT_CORS_ORIGINS.copy()
@@ -22,6 +35,9 @@ def create_app(config: dict, riot_client=None, storage=None, scan_service=None):
 
     app.extensions["riot_client"] = riot_client
     app.extensions["storage"] = storage
+    if live_client is None:
+        live_client = LiveClient()
+    app.extensions["live_client"] = live_client
     if scan_service is None:
         scan_service = ScanService(storage=storage, riot_client=riot_client)
     app.extensions["scan_service"] = scan_service
@@ -60,6 +76,49 @@ def create_app(config: dict, riot_client=None, storage=None, scan_service=None):
             return jsonify({"error": "Internal server error"}), 500
 
         return jsonify(result), 200
+
+    @app.route("/api/live-client/status", methods=["GET"])
+    def live_client_status():
+        status = disconnected_live_client_status()
+
+        try:
+            live_status = app.extensions["live_client"].get_status()
+        except Exception:
+            app.logger.exception("Live client status lookup failed")
+            live_status = None
+
+        if isinstance(live_status, dict):
+            status.update(live_status)
+
+        matched_profile = None
+        active_player = status.get("activePlayer")
+        get_tracked_profile = getattr(
+            app.extensions.get("storage"),
+            "get_tracked_profile_by_riot_id",
+            None,
+        )
+
+        if (
+            status.get("connected")
+            and status.get("inGame")
+            and isinstance(active_player, dict)
+            and callable(get_tracked_profile)
+        ):
+            matched_profile = get_tracked_profile(
+                active_player.get("gameName"),
+                active_player.get("tagLine"),
+            )
+
+        return jsonify({
+            **status,
+            "matchedProfile": matched_profile,
+            "canAutoScan": bool(
+                status.get("connected")
+                and status.get("inGame")
+                and status.get("sessionFingerprint")
+                and matched_profile
+            ),
+        }), 200
 
     @app.route("/", methods=["GET"])
     def root():

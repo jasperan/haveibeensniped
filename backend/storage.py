@@ -221,6 +221,33 @@ class Storage:
             )
         return self._select_id("tracked_profiles", puuid=puuid)
 
+    def get_tracked_profile_by_riot_id(self, game_name, tag_line) -> dict | None:
+        if not game_name or not tag_line:
+            return None
+
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                SELECT id, puuid, game_name, tag_line, region
+                FROM tracked_profiles
+                WHERE game_name = ? AND tag_line = ?
+                ORDER BY updated_at DESC, id DESC
+                LIMIT 1
+                """,
+                (game_name, tag_line),
+            ).fetchone()
+
+        if row is None:
+            return None
+
+        return {
+            "id": int(row["id"]),
+            "puuid": row["puuid"],
+            "gameName": row["game_name"],
+            "tagLine": row["tag_line"],
+            "region": row["region"],
+        }
+
     def upsert_player(self, puuid, game_name, tag_line, region, resolution_status) -> int:
         with self._connect() as connection:
             connection.execute(
