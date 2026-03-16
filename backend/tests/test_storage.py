@@ -1,3 +1,5 @@
+import sqlite3
+
 from storage import Storage
 
 
@@ -36,3 +38,72 @@ def test_insert_encounter_dedupes_same_match(tmp_path):
     storage.insert_encounter(profile_id, "target", scan_id, "MATCH-1", "2026-03-16T00:00:00Z", "enemy", 81, 157, 1)
 
     assert storage.count_encounters() == 1
+
+
+def test_initialize_migrates_scans_table_for_not_in_game_rows(tmp_path):
+    db_path = tmp_path / "hibs.db"
+
+    with sqlite3.connect(db_path) as connection:
+        connection.execute(
+            """
+            CREATE TABLE tracked_profiles (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                puuid TEXT NOT NULL UNIQUE,
+                game_name TEXT NOT NULL,
+                tag_line TEXT NOT NULL,
+                region TEXT NOT NULL,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE scans (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                tracked_profile_id INTEGER NOT NULL,
+                source TEXT NOT NULL,
+                region TEXT NOT NULL,
+                game_id INTEGER NOT NULL,
+                queue_type TEXT NOT NULL,
+                status TEXT NOT NULL,
+                duration_seconds REAL NOT NULL,
+                encounter_count INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (tracked_profile_id) REFERENCES tracked_profiles (id) ON DELETE CASCADE
+            )
+            """
+        )
+        connection.execute(
+            "INSERT INTO tracked_profiles (puuid, game_name, tag_line, region) VALUES (?, ?, ?, ?)",
+            ("self", "Streamer", "NA1", "NA1"),
+        )
+        connection.execute(
+            """
+            INSERT INTO scans (
+                tracked_profile_id,
+                source,
+                region,
+                game_id,
+                queue_type,
+                status,
+                duration_seconds,
+                encounter_count
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (1, "manual", "NA1", 123, "CLASSIC", "ok", 0.5, 1),
+        )
+
+    storage = Storage(db_path)
+    scan_id = storage.insert_scan(1, "manual", "NA1", None, None, "not_in_game", 0.0, 0)
+
+    with sqlite3.connect(db_path) as connection:
+        rows = connection.execute(
+            "SELECT game_id, queue_type, status FROM scans ORDER BY id"
+        ).fetchall()
+
+    assert len(rows) == 2
+    assert rows[0] == (123, "CLASSIC", "ok")
+    assert rows[1] == (None, None, "not_in_game")
+

@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import sqlite3
+from collections import defaultdict
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Iterable
 
@@ -37,8 +39,8 @@ SCHEMA_STATEMENTS: Iterable[str] = (
         tracked_profile_id INTEGER NOT NULL,
         source TEXT NOT NULL,
         region TEXT NOT NULL,
-        game_id INTEGER NOT NULL,
-        queue_type TEXT NOT NULL,
+        game_id INTEGER,
+        queue_type TEXT,
         status TEXT NOT NULL,
         duration_seconds REAL NOT NULL,
         encounter_count INTEGER NOT NULL DEFAULT 0,
@@ -105,6 +107,7 @@ class Storage:
 
     def _connect(self) -> sqlite3.Connection:
         connection = sqlite3.connect(self.database_path)
+        connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA foreign_keys = ON")
         return connection
 
@@ -112,6 +115,72 @@ class Storage:
         with self._connect() as connection:
             for statement in SCHEMA_STATEMENTS:
                 connection.execute(statement)
+            self._migrate_scans_table(connection)
+
+    def _migrate_scans_table(self, connection: sqlite3.Connection) -> None:
+        columns = {
+            row["name"]: row
+            for row in connection.execute("PRAGMA table_info(scans)").fetchall()
+        }
+        if not columns:
+            return
+        if not columns["game_id"]["notnull"] and not columns["queue_type"]["notnull"]:
+            return
+
+        connection.commit()
+        connection.execute("PRAGMA foreign_keys = OFF")
+        try:
+            connection.execute("DROP TABLE IF EXISTS scans__new")
+            connection.execute(
+                """
+                CREATE TABLE scans__new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    tracked_profile_id INTEGER NOT NULL,
+                    source TEXT NOT NULL,
+                    region TEXT NOT NULL,
+                    game_id INTEGER,
+                    queue_type TEXT,
+                    status TEXT NOT NULL,
+                    duration_seconds REAL NOT NULL,
+                    encounter_count INTEGER NOT NULL DEFAULT 0,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (tracked_profile_id) REFERENCES tracked_profiles (id) ON DELETE CASCADE
+                )
+                """
+            )
+            connection.execute(
+                """
+                INSERT INTO scans__new (
+                    id,
+                    tracked_profile_id,
+                    source,
+                    region,
+                    game_id,
+                    queue_type,
+                    status,
+                    duration_seconds,
+                    encounter_count,
+                    created_at
+                )
+                SELECT
+                    id,
+                    tracked_profile_id,
+                    source,
+                    region,
+                    game_id,
+                    queue_type,
+                    status,
+                    duration_seconds,
+                    encounter_count,
+                    created_at
+                FROM scans
+                """
+            )
+            connection.execute("DROP TABLE scans")
+            connection.execute("ALTER TABLE scans__new RENAME TO scans")
+            connection.commit()
+        finally:
+            connection.execute("PRAGMA foreign_keys = ON")
 
     def _select_id(self, table: str, **filters) -> int:
         where_clause = " AND ".join(f"{column} = ?" for column in filters)
@@ -294,7 +363,168 @@ class Storage:
             match_id=match_id,
         )
 
+    def load_repeat_players(self, tracked_profile_id, player_puuids=None) -> list[dict]:
+        if player_puuids is not None and not player_puuids:
+            return []
+
+        encounter_filter = ""
+        params = [tracked_profile_id]
+        if player_puuids:
+            placeholders = ", ".join("?" for _ in player_puuids)
+            encounter_filter = f" AND e.player_puuid IN ({placeholders})"
+            params.extend(player_puuids)
+
+        with self._connect() as connection:
+            encounter_rows = connection.execute(
+                f"""
+                SELECT
+                    e.player_puuid,
+                    e.match_id,
+                    e.played_at,
+                    e.relation,
+                    e.champion_id,
+                    e.queue_id,
+                    e.won,
+                    p.game_name,
+                    p.tag_line,
+                    p.region,
+                    p.resolution_status
+                FROM encounters e
+                JOIN players p ON p.puuid = e.player_puuid
+                WHERE e.tracked_profile_id = ?{encounter_filter}
+                ORDER BY e.player_puuid, e.played_at DESC, e.id DESC
+                """,
+                params,
+            ).fetchall()
+
+            if not encounter_rows:
+                return []
+
+            scan_rows = connection.execute(
+                """
+                SELECT id
+                FROM scans
+                WHERE tracked_profile_id = ?
+                ORDER BY id DESC
+                """,
+                (tracked_profile_id,),
+            ).fetchall()
+            ordered_scan_ids = [int(row["id"]) for row in scan_rows]
+
+            scan_hit_filter = ""
+            scan_hit_params = [tracked_profile_id]
+            if player_puuids:
+                placeholders = ", ".join("?" for _ in player_puuids)
+                scan_hit_filter = f" AND sp.player_puuid IN ({placeholders})"
+                scan_hit_params.extend(player_puuids)
+
+            hit_rows = connection.execute(
+                f"""
+                SELECT DISTINCT sp.player_puuid, sp.scan_id
+                FROM scan_participants sp
+                JOIN scans s ON s.id = sp.scan_id
+                WHERE s.tracked_profile_id = ?{scan_hit_filter}
+                ORDER BY sp.scan_id DESC
+                """,
+                scan_hit_params,
+            ).fetchall()
+
+        players: dict[str, dict] = {}
+        for row in encounter_rows:
+            player = players.setdefault(
+                row["player_puuid"],
+                {
+                    "puuid": row["player_puuid"],
+                    "gameName": row["game_name"],
+                    "tagLine": row["tag_line"],
+                    "region": row["region"],
+                    "resolutionStatus": row["resolution_status"],
+                    "encounters": [],
+                },
+            )
+            player["encounters"].append(
+                {
+                    "matchId": row["match_id"],
+                    "playedAt": row["played_at"],
+                    "relation": row["relation"],
+                    "championId": row["champion_id"],
+                    "queueId": row["queue_id"],
+                    "won": bool(row["won"]),
+                }
+            )
+
+        scan_hits = defaultdict(set)
+        for row in hit_rows:
+            scan_hits[row["player_puuid"]].add(int(row["scan_id"]))
+
+        repeat_players = []
+        for player in players.values():
+            player["stats"] = self._build_repeat_player_stats(
+                player["encounters"],
+                ordered_scan_ids,
+                scan_hits.get(player["puuid"], set()),
+            )
+            repeat_players.append(player)
+
+        repeat_players.sort(
+            key=lambda player: (
+                -player["stats"]["total_encounters"],
+                player["gameName"].lower(),
+                player["tagLine"].lower(),
+            )
+        )
+        return repeat_players
+
     def count_encounters(self) -> int:
         with self._connect() as connection:
             row = connection.execute("SELECT COUNT(*) FROM encounters").fetchone()
         return int(row[0])
+
+    @staticmethod
+    def _build_repeat_player_stats(encounters, ordered_scan_ids, hit_scan_ids) -> dict:
+        total_encounters = len(encounters)
+        now = datetime.now(timezone.utc)
+        last_30_days = now - timedelta(days=30)
+        last_7_days = now - timedelta(days=7)
+
+        played_at_values = [
+            Storage._parse_timestamp(encounter["playedAt"])
+            for encounter in encounters
+        ]
+
+        encounters_last_30d = [played_at for played_at in played_at_values if played_at >= last_30_days]
+        encounters_last_7d = [played_at for played_at in played_at_values if played_at >= last_7_days]
+        distinct_days_last_30d = {played_at.date().isoformat() for played_at in encounters_last_30d}
+
+        enemy_count = sum(1 for encounter in encounters if encounter["relation"] == "enemy")
+        ally_count = sum(1 for encounter in encounters if encounter["relation"] == "ally")
+
+        return {
+            "total_encounters": total_encounters,
+            "encounters_last_30d": len(encounters_last_30d),
+            "distinct_days_last_30d": len(distinct_days_last_30d),
+            "encounters_last_7d": len(encounters_last_7d),
+            "consecutive_scan_hits": Storage._count_consecutive_scan_hits(ordered_scan_ids, hit_scan_ids),
+            "enemy_ratio": enemy_count / total_encounters if total_encounters else 0.0,
+            "ally_ratio": ally_count / total_encounters if total_encounters else 0.0,
+        }
+
+    @staticmethod
+    def _count_consecutive_scan_hits(ordered_scan_ids, hit_scan_ids) -> int:
+        consecutive = 0
+        for scan_id in ordered_scan_ids:
+            if scan_id in hit_scan_ids:
+                consecutive += 1
+                continue
+            if consecutive:
+                break
+            return 0
+        return consecutive
+
+    @staticmethod
+    def _parse_timestamp(value: str) -> datetime:
+        normalized = value.replace("Z", "+00:00")
+        parsed = datetime.fromisoformat(normalized)
+        if parsed.tzinfo is None:
+            return parsed.replace(tzinfo=timezone.utc)
+        return parsed.astimezone(timezone.utc)
