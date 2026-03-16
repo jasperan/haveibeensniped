@@ -32,6 +32,19 @@ By default, that data lives in `backend/data/haveibeensniped.db`. Fresh installs
 
 These labels describe encounter recurrence, not intent. They tell you who keeps reappearing in local memory, not why.
 
+## Live Client Auto-Detect
+
+Phase 2 adds local active-game detection through Riot's Live Client Data API at `https://127.0.0.1:2999/liveclientdata/allgamedata`.
+
+What it does now:
+- polls the local game client every 5 seconds while the app page is open
+- matches the local Riot ID against your saved tracked profile
+- auto-runs one scan per live-session fingerprint instead of hammering `/api/scan`
+
+What it does not do yet:
+- it does not keep running if the page is closed
+- it does not guess a region from thin air, it needs a saved tracked profile match first
+
 ## Prerequisites
 
 - **Node.js** (v16 or higher)
@@ -182,6 +195,7 @@ python backend/cli.py
 ### API Endpoints
 
 - `POST /api/scan` - Run a manual scan, persist the local lobby snapshot and shared matches, then return repeat-player scoring
+- `GET /api/live-client/status` - Report local Live Client connection state, active Riot ID, saved tracked profile match, and whether auto-scan can fire
 
 ### Regional Routing
 

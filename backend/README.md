@@ -47,6 +47,18 @@ By default, the database lives at `backend/data/haveibeensniped.db`. Fresh insta
 
 These labels describe encounter recurrence, not intent. They are local heuristics, not accusations.
 
+## Live Client Auto-Detect
+
+The backend now exposes local game-client status through Riot's Live Client Data API at `https://127.0.0.1:2999/liveclientdata/allgamedata`.
+
+Current behavior:
+- `GET /api/live-client/status` reports whether the local client is connected and in game
+- it returns the local active Riot ID when the game client exposes it
+- it matches that Riot ID against a saved tracked profile so the frontend can auto-scan safely
+- it uses a live-session fingerprint so one match only triggers one auto-scan while the page stays open
+
+This is page-driven for now. If the frontend page is closed, auto-detect is not running.
+
 ## API Endpoints
 
 ### Health Check
@@ -69,6 +81,13 @@ Content-Type: application/json
 ```
 
 Resolves the tracked Riot ID, checks the live lobby, stores the scan locally, and returns repeat-player results built from shared match history.
+
+### Live Client Status
+```
+GET /api/live-client/status
+```
+
+Returns local game-client state, the active Riot ID when available, a saved tracked-profile match, and whether the frontend can auto-trigger a scan.
 
 ## Configuration Options
 
