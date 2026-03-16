@@ -30,11 +30,13 @@ dist-ssr
 
 # Backend
 backend/config.yaml
+backend/data/
 backend/__pycache__
 backend/*.pyc
 backend/.pytest_cache
 backend/venv
 backend/.venv
+*.db
 
 # Python
 *.py[cod]

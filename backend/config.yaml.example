@@ -5,6 +5,7 @@ riot_api_key: "RGAPI-YOUR-API-KEY-HERE"
 
 # Server configuration
 port: 5000
+database_path: "data/haveibeensniped.db"
 
 # CORS origins (add your frontend URLs)
 cors_origins:
