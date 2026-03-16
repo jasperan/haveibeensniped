@@ -6,6 +6,9 @@ import requests
 from riot_client import normalize_riot_id_fields
 
 
+PLACEHOLDER_RIOT_ID = "Unknown#UNKNOWN"
+
+
 class LiveClient:
     BASE_URL = "https://127.0.0.1:2999/liveclientdata/allgamedata"
 
@@ -15,25 +18,46 @@ class LiveClient:
     def get_status(self) -> Dict[str, Any]:
         try:
             response = self.session.get(self.BASE_URL, timeout=2, verify=False)
-        except OSError:
-            return self._disconnected()
-        except requests.RequestException:
+        except (OSError, requests.RequestException):
             return self._disconnected()
 
         if response.status_code != 200:
             return self._disconnected()
 
         try:
-            payload = response.json() or {}
+            payload = response.json()
         except ValueError:
             return self._disconnected()
 
         if not isinstance(payload, dict):
-            payload = {}
+            return self._disconnected()
 
-        active_player = self._normalize_active_player(payload.get("activePlayer") or {})
-        all_players = payload.get("allPlayers") or payload.get("playerlist") or []
-        game_data = payload.get("gameData") or payload.get("gameStats") or {}
+        raw_active_player = payload.get("activePlayer")
+        raw_all_players = payload.get("allPlayers")
+        raw_playerlist = payload.get("playerlist")
+        raw_game_data = payload.get("gameData")
+        raw_game_stats = payload.get("gameStats")
+
+        if not isinstance(raw_active_player, dict):
+            return self._disconnected()
+
+        active_player = self._normalize_active_player(raw_active_player)
+        if not self._is_usable_identity(active_player.get("riotId")):
+            return self._disconnected()
+
+        if isinstance(raw_all_players, list):
+            all_players = raw_all_players
+        elif isinstance(raw_playerlist, list):
+            all_players = raw_playerlist
+        else:
+            all_players = []
+
+        if isinstance(raw_game_data, dict):
+            game_data = raw_game_data
+        elif isinstance(raw_game_stats, dict):
+            game_data = raw_game_stats
+        else:
+            game_data = {}
 
         return {
             "connected": True,
@@ -70,10 +94,17 @@ class LiveClient:
         all_players: Iterable[Dict[str, Any]],
         game_data: Dict[str, Any],
     ) -> Optional[str]:
+        if not self._is_usable_identity(active_player.get("riotId")):
+            return None
+
         riot_ids = sorted({
-            normalize_riot_id_fields(self._with_riot_id_shim(player)).get("riot_id")
-            for player in all_players or []
-            if isinstance(player, dict)
+            normalized_identity
+            for normalized_identity in (
+                normalize_riot_id_fields(self._with_riot_id_shim(player)).get("riot_id")
+                for player in all_players or []
+                if isinstance(player, dict)
+            )
+            if self._is_usable_identity(normalized_identity)
         })
 
         components = [
@@ -97,3 +128,7 @@ class LiveClient:
             normalized_participant["riotId"] = summoner_name
 
         return normalized_participant
+
+    @staticmethod
+    def _is_usable_identity(riot_id: Optional[str]) -> bool:
+        return bool(riot_id and riot_id != PLACEHOLDER_RIOT_ID)
