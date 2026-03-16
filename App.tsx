@@ -1,28 +1,36 @@
-
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import LobbyTracker from './components/LobbyTracker';
+import RepeatPlayerBoard from './components/RepeatPlayerBoard';
+import RepeatPlayerDetail from './components/RepeatPlayerDetail';
 import SnipeHistory from './components/SnipeHistory';
 import {
   RiotService,
   mapRepeatPlayersToSnipedPlayers,
   mapScanCurrentGameToCurrentGame,
 } from './services/riotService';
-import { CurrentGame, SnipedPlayer, Region } from './types';
+import { CurrentGame, Region, RepeatPlayer } from './types';
 
 const App: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentGame, setCurrentGame] = useState<CurrentGame | null>(null);
-  const [snipedPlayers, setSnipedPlayers] = useState<SnipedPlayer[]>([]);
+  const [repeatPlayers, setRepeatPlayers] = useState<RepeatPlayer[]>([]);
+  const [selectedRepeatPlayer, setSelectedRepeatPlayer] = useState<RepeatPlayer | null>(null);
   const [searchedUser, setSearchedUser] = useState<{ name: string; tag: string } | null>(null);
+
+  const snipedPlayers = useMemo(
+    () => mapRepeatPlayersToSnipedPlayers(repeatPlayers),
+    [repeatPlayers],
+  );
 
   const handleSearch = async (name: string, tag: string, region: Region) => {
     setLoading(true);
     setError(null);
     setCurrentGame(null);
-    setSnipedPlayers([]);
+    setRepeatPlayers([]);
+    setSelectedRepeatPlayer(null);
     setSearchedUser({ name, tag });
 
     try {
@@ -34,7 +42,7 @@ const App: React.FC = () => {
       }
 
       setCurrentGame(mapScanCurrentGameToCurrentGame(scan.currentGame));
-      setSnipedPlayers(mapRepeatPlayersToSnipedPlayers(scan.repeatPlayers));
+      setRepeatPlayers(scan.repeatPlayers);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred while communicating with the Riot API.');
       console.error(err);
@@ -43,15 +51,22 @@ const App: React.FC = () => {
     }
   };
 
+  const handleInspectRepeatPlayer = (puuid: string) => {
+    const player = repeatPlayers.find((candidate) => candidate.puuid === puuid);
+    if (player) {
+      setSelectedRepeatPlayer(player);
+    }
+  };
+
   return (
     <div className="min-h-screen league-gradient selection:bg-indigo-500 selection:text-white flex flex-col">
       <Navbar />
-      
+
       <main className="max-w-7xl mx-auto pb-24 relative flex-grow">
         {/* Background Decorations */}
         <div className="absolute top-0 right-0 -z-10 w-[500px] h-[500px] bg-indigo-600/10 blur-[120px] rounded-full"></div>
         <div className="absolute top-40 left-0 -z-10 w-[400px] h-[400px] bg-pink-600/5 blur-[100px] rounded-full"></div>
-        
+
         <Hero onSearch={handleSearch} isLoading={loading} />
 
         {error && (
@@ -78,13 +93,22 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            <LobbyTracker 
-              game={currentGame} 
-              snipes={snipedPlayers} 
-              userName={searchedUser?.name || ''} 
+            <LobbyTracker
+              game={currentGame}
+              snipes={snipedPlayers}
+              userName={searchedUser?.name || ''}
             />
-            
-            <SnipeHistory snipes={snipedPlayers} />
+
+            <RepeatPlayerBoard
+              players={repeatPlayers}
+              selectedPlayerPuuid={selectedRepeatPlayer?.puuid ?? null}
+              onSelectPlayer={setSelectedRepeatPlayer}
+            />
+
+            <SnipeHistory
+              snipes={snipedPlayers}
+              onInspect={handleInspectRepeatPlayer}
+            />
           </div>
         )}
 
@@ -136,6 +160,11 @@ const App: React.FC = () => {
           </div>
         </div>
       </footer>
+
+      <RepeatPlayerDetail
+        player={selectedRepeatPlayer}
+        onClose={() => setSelectedRepeatPlayer(null)}
+      />
     </div>
   );
 };
