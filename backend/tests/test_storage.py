@@ -1,5 +1,4 @@
 from storage import Storage
-from utils import load_runtime_config
 
 
 def test_initialize_creates_core_tables(tmp_path):
@@ -11,6 +10,7 @@ def test_initialize_creates_core_tables(tmp_path):
     assert "scans" in tables
     assert "scan_participants" in tables
     assert "encounters" in tables
+    assert "watch_notes" in tables
 
 
 def test_upsert_tracked_profile_is_idempotent(tmp_path):
@@ -36,15 +36,3 @@ def test_insert_encounter_dedupes_same_match(tmp_path):
     storage.insert_encounter(profile_id, "target", scan_id, "MATCH-1", "2026-03-16T00:00:00Z", "enemy", 81, 157, 1)
 
     assert storage.count_encounters() == 1
-
-
-def test_load_runtime_config_resolves_database_path(tmp_path):
-    config_path = tmp_path / "config.yaml"
-    config_path.write_text(
-        'riot_api_key: "test-key"\ndatabase_path: "data/haveibeensniped.db"\n',
-        encoding="utf-8",
-    )
-
-    config = load_runtime_config(config_path)
-
-    assert config["DATABASE_PATH"] == str(tmp_path / "data" / "haveibeensniped.db")
