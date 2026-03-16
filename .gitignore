@@ -30,11 +30,13 @@ dist-ssr
 
 # Backend
 backend/config.yaml
+backend/data/
 backend/__pycache__
 backend/*.pyc
 backend/.pytest_cache
 backend/venv
 backend/.venv
+*.db
 
 # Python
 *.py[cod]
@@ -47,3 +49,32 @@ task_plan.md
 findings.md
 progress.md
 CLAUDE.md
+
+# Dogfood / QA output
+dogfood-output/
+.playwright-mcp/
+
+
+# OpenCode-generated documentation (local reference only)
+TESTING_REPORT.md
+AGENT_HARNESS_ANNEX.md
+SKILLS_EXECUTION_SUMMARY.md
+
+# Generated documentation
+docs/plans/
+docs/*.md
+!docs/README.md
+*_FEATURES.md
+*_ENHANCEMENTS.md
+*_REPORT.md
+
+# Worktrees and local agent state
+.worktrees/
+worktrees/
+.agents/
+.claude/
+.crush/
+.openhands/
+.serena/
+.pi/
+content/

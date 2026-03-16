@@ -1,61 +1,262 @@
-
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import LobbyTracker from './components/LobbyTracker';
+import RepeatPlayerBoard from './components/RepeatPlayerBoard';
+import RepeatPlayerDetail from './components/RepeatPlayerDetail';
 import SnipeHistory from './components/SnipeHistory';
-import { RiotService } from './services/riotService';
-import { CurrentGame, SnipedPlayer, Region } from './types';
+import {
+  RiotService,
+  mapRepeatPlayersToSnipedPlayers,
+  mapScanCurrentGameToCurrentGame,
+} from './services/riotService';
+import { CurrentGame, LiveClientStatus, Region, RepeatPlayer } from './types';
+
+const LIVE_CLIENT_POLL_INTERVAL_MS = 5000;
+const DISCONNECTED_LIVE_CLIENT_STATUS: LiveClientStatus = {
+  connected: false,
+  inGame: false,
+  activePlayer: null,
+  participantCount: 0,
+  gameMode: null,
+  mapName: null,
+  sessionFingerprint: null,
+  matchedProfile: null,
+  canAutoScan: false,
+};
+
+const getLiveClientBanner = (
+  liveClientStatus: LiveClientStatus,
+  lastAutoScanFingerprint: string | null,
+  loading: boolean,
+) => {
+  if (!liveClientStatus.connected) {
+    return {
+      accentClassName: 'bg-zinc-500',
+      badgeClassName: 'border-zinc-700 bg-zinc-900 text-zinc-300',
+      text: 'Live Client offline on this machine.',
+    };
+  }
+
+  if (!liveClientStatus.inGame) {
+    return {
+      accentClassName: 'bg-emerald-500',
+      badgeClassName: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
+      text: 'Live Client connected. Waiting for a game.',
+    };
+  }
+
+  const riotId = liveClientStatus.activePlayer?.riotId || 'Unknown player';
+
+  if (!liveClientStatus.matchedProfile) {
+    return {
+      accentClassName: 'bg-amber-500',
+      badgeClassName: 'border-amber-500/30 bg-amber-500/10 text-amber-300',
+      text: `Found local player ${riotId}, but no saved tracked profile exists yet. Run one manual scan first.`,
+    };
+  }
+
+  if (loading && liveClientStatus.canAutoScan && liveClientStatus.sessionFingerprint !== lastAutoScanFingerprint) {
+    return {
+      accentClassName: 'bg-indigo-500',
+      badgeClassName: 'border-indigo-500/30 bg-indigo-500/10 text-indigo-300',
+      text: `Auto-scanning the current session for ${riotId}.`,
+    };
+  }
+
+  if (liveClientStatus.canAutoScan && liveClientStatus.sessionFingerprint === lastAutoScanFingerprint) {
+    return {
+      accentClassName: 'bg-indigo-500',
+      badgeClassName: 'border-indigo-500/30 bg-indigo-500/10 text-indigo-300',
+      text: `Auto-scanned current session for ${riotId}.`,
+    };
+  }
+
+  if (liveClientStatus.canAutoScan) {
+    return {
+      accentClassName: 'bg-emerald-500',
+      badgeClassName: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
+      text: `Auto-scan ready for ${riotId}.`,
+    };
+  }
+
+  return {
+    accentClassName: 'bg-zinc-500',
+    badgeClassName: 'border-zinc-700 bg-zinc-900 text-zinc-300',
+    text: 'Live Client connected.',
+  };
+};
 
 const App: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentGame, setCurrentGame] = useState<CurrentGame | null>(null);
-  const [snipedPlayers, setSnipedPlayers] = useState<SnipedPlayer[]>([]);
+  const [repeatPlayers, setRepeatPlayers] = useState<RepeatPlayer[]>([]);
+  const [selectedRepeatPlayer, setSelectedRepeatPlayer] = useState<RepeatPlayer | null>(null);
   const [searchedUser, setSearchedUser] = useState<{ name: string; tag: string } | null>(null);
+  const [liveClientStatus, setLiveClientStatus] = useState<LiveClientStatus>(DISCONNECTED_LIVE_CLIENT_STATUS);
+  const [lastAutoScanFingerprint, setLastAutoScanFingerprint] = useState<string | null>(null);
+  const [lastScanSource, setLastScanSource] = useState<'manual' | 'auto' | null>(null);
 
-  const handleSearch = async (name: string, tag: string, region: Region) => {
+  const snipedPlayers = useMemo(
+    () => mapRepeatPlayersToSnipedPlayers(repeatPlayers),
+    [repeatPlayers],
+  );
+
+  const liveClientBanner = useMemo(
+    () => getLiveClientBanner(liveClientStatus, lastAutoScanFingerprint, loading),
+    [lastAutoScanFingerprint, liveClientStatus, loading],
+  );
+
+  const runScan = useCallback(async (
+    name: string,
+    tag: string,
+    region: Region,
+    options?: { clearExisting?: boolean; source?: 'manual' | 'auto' },
+  ) => {
+    const clearExisting = options?.clearExisting ?? true;
+    const source = options?.source ?? 'manual';
+
     setLoading(true);
     setError(null);
-    setCurrentGame(null);
-    setSnipedPlayers([]);
+    if (clearExisting) {
+      setCurrentGame(null);
+      setRepeatPlayers([]);
+      setSelectedRepeatPlayer(null);
+    }
     setSearchedUser({ name, tag });
 
     try {
-      // 1. Check if In Game
-      const game = await RiotService.checkInGame(name, tag, region);
-      
-      if (!game) {
+      const scan = await RiotService.scan(name, tag, region);
+
+      if (!scan.currentGame) {
         setError(`Summoner ${name}#${tag} is currently not in a live game. Make sure you are in a loading screen or game!`);
-        setLoading(false);
-        return;
+        return false;
       }
 
-      setCurrentGame(game);
-
-      // 2. Fetch History & Cross-reference
-      const userPuuid = game.participants.find(p => p.summonerName.toLowerCase() === name.toLowerCase())?.puuid || 'user-puuid';
-      const snipes = await RiotService.analyzeSnipes(userPuuid, game.participants, region);
-      
-      setSnipedPlayers(snipes);
+      setCurrentGame(mapScanCurrentGameToCurrentGame(scan.currentGame));
+      setRepeatPlayers(scan.repeatPlayers);
+      setLastScanSource(source);
+      return true;
     } catch (err) {
-      setError("An unexpected error occurred while communicating with the Riot API.");
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred while communicating with the Riot API.');
       console.error(err);
+      return false;
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  const handleSearch = async (name: string, tag: string, region: Region) => {
+    const didScan = await runScan(name, tag, region, { clearExisting: true, source: 'manual' });
+
+    if (
+      didScan
+      && liveClientStatus.canAutoScan
+      && liveClientStatus.sessionFingerprint
+      && liveClientStatus.matchedProfile?.gameName.toLowerCase() === name.toLowerCase()
+      && liveClientStatus.matchedProfile?.tagLine.toLowerCase() === tag.toLowerCase()
+    ) {
+      setLastAutoScanFingerprint(liveClientStatus.sessionFingerprint);
+    }
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const pollLiveClientStatus = async () => {
+      try {
+        const status = await RiotService.getLiveClientStatus();
+        if (cancelled) return;
+
+        setLiveClientStatus(status);
+
+        if (!status.inGame || !status.sessionFingerprint) {
+          setLastAutoScanFingerprint(null);
+          if (lastScanSource === 'auto') {
+            setCurrentGame(null);
+            setRepeatPlayers([]);
+            setSelectedRepeatPlayer(null);
+          }
+          return;
+        }
+
+        if (!status.canAutoScan || !status.matchedProfile || loading) {
+          return;
+        }
+
+        if (status.sessionFingerprint === lastAutoScanFingerprint) {
+          return;
+        }
+
+        const didScan = await runScan(
+          status.matchedProfile.gameName,
+          status.matchedProfile.tagLine,
+          status.matchedProfile.region,
+          { clearExisting: false, source: 'auto' },
+        );
+
+        if (!cancelled && didScan) {
+          setLastAutoScanFingerprint(status.sessionFingerprint);
+        }
+      } catch (pollError) {
+        if (cancelled) return;
+        console.error('Error polling Live Client status:', pollError);
+        setLiveClientStatus(DISCONNECTED_LIVE_CLIENT_STATUS);
+      }
+    };
+
+    void pollLiveClientStatus();
+    const intervalId = window.setInterval(() => {
+      void pollLiveClientStatus();
+    }, LIVE_CLIENT_POLL_INTERVAL_MS);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [lastAutoScanFingerprint, lastScanSource, loading, runScan]);
+
+  const handleInspectRepeatPlayer = (puuid: string) => {
+    const player = repeatPlayers.find((candidate) => candidate.puuid === puuid);
+    if (player) {
+      setSelectedRepeatPlayer(player);
     }
   };
 
   return (
     <div className="min-h-screen league-gradient selection:bg-indigo-500 selection:text-white flex flex-col">
       <Navbar />
-      
+
       <main className="max-w-7xl mx-auto pb-24 relative flex-grow">
         {/* Background Decorations */}
         <div className="absolute top-0 right-0 -z-10 w-[500px] h-[500px] bg-indigo-600/10 blur-[120px] rounded-full"></div>
         <div className="absolute top-40 left-0 -z-10 w-[400px] h-[400px] bg-pink-600/5 blur-[100px] rounded-full"></div>
-        
+
         <Hero onSearch={handleSearch} isLoading={loading} />
+
+        <div className="px-4 mb-8">
+          <div className="mx-auto max-w-4xl rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4 backdrop-blur-sm">
+            <div className="flex items-start gap-4">
+              <div className={`mt-1.5 h-3 w-3 rounded-full ${liveClientBanner.accentClassName}`}></div>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className={`rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${liveClientBanner.badgeClassName}`}>
+                    Live Client
+                  </span>
+                  {liveClientStatus.activePlayer?.riotId && (
+                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                      {liveClientStatus.activePlayer.riotId}
+                    </span>
+                  )}
+                </div>
+                <p className="mt-3 text-sm leading-relaxed text-zinc-300">
+                  {liveClientBanner.text}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {error && (
           <div className="max-w-3xl mx-auto px-4 animate-in fade-in zoom-in duration-300">
@@ -68,7 +269,6 @@ const App: React.FC = () => {
 
         {!error && currentGame && (
           <div className="px-4">
-            {/* Status Indicator */}
             <div className="max-w-2xl mx-auto bg-zinc-900/80 border border-zinc-800 p-4 rounded-2xl flex items-center justify-between mb-8 backdrop-blur-sm">
               <div className="flex items-center gap-4">
                 <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
@@ -81,17 +281,25 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            <LobbyTracker 
-              game={currentGame} 
-              snipes={snipedPlayers} 
-              userName={searchedUser?.name || ''} 
+            <LobbyTracker
+              game={currentGame}
+              snipes={snipedPlayers}
+              userName={searchedUser?.name || ''}
             />
-            
-            <SnipeHistory snipes={snipedPlayers} />
+
+            <RepeatPlayerBoard
+              players={repeatPlayers}
+              selectedPlayerPuuid={selectedRepeatPlayer?.puuid ?? null}
+              onSelectPlayer={setSelectedRepeatPlayer}
+            />
+
+            <SnipeHistory
+              snipes={snipedPlayers}
+              onInspect={handleInspectRepeatPlayer}
+            />
           </div>
         )}
 
-        {/* Informational Cards if nothing is searched */}
         {!currentGame && !error && !loading && (
           <div className="grid md:grid-cols-3 gap-6 px-4 max-w-5xl mx-auto mt-12">
             <div className="glass-card p-8 rounded-3xl border-zinc-800/50 hover:border-zinc-700 transition-colors group">
@@ -139,6 +347,11 @@ const App: React.FC = () => {
           </div>
         </div>
       </footer>
+
+      <RepeatPlayerDetail
+        player={selectedRepeatPlayer}
+        onClose={() => setSelectedRepeatPlayer(null)}
+      />
     </div>
   );
 };

@@ -5,8 +5,41 @@ Handles all interactions with Riot Games API
 
 import requests
 import time
-from typing import Dict, List, Optional, Any
-from utils import get_regional_endpoint, get_platform_endpoint
+from typing import Any, Dict, List, Optional
+
+from utils import get_platform_endpoint, get_regional_endpoint
+
+
+def normalize_riot_id_fields(participant: Dict[str, Any]) -> Dict[str, str]:
+    """Normalize Riot spectator identity fields into a stable game/tag pair."""
+    riot_id = str(participant.get("riotId") or "").strip()
+    parsed_game_name = ""
+    parsed_tag_line = ""
+
+    if riot_id and "#" in riot_id:
+        parsed_game_name, parsed_tag_line = riot_id.split("#", 1)
+
+    game_name = (
+        participant.get("riotIdGameName")
+        or parsed_game_name
+        or participant.get("gameName")
+        or participant.get("summonerName")
+    )
+    tag_line = (
+        participant.get("riotIdTagLine")
+        or participant.get("riotIdTagline")
+        or parsed_tag_line
+        or participant.get("tagLine")
+    )
+
+    game_name = str(game_name or "Unknown").strip() or "Unknown"
+    tag_line = str(tag_line or "UNKNOWN").strip() or "UNKNOWN"
+
+    return {
+        "game_name": game_name,
+        "tag_line": tag_line,
+        "riot_id": riot_id or f"{game_name}#{tag_line}",
+    }
 
 
 class RiotAPIClient:
@@ -203,4 +236,3 @@ class RiotAPIClient:
         
         # Filter out players with no shared matches
         return {k: v for k, v in results.items() if v['totalGames'] > 0}
-
