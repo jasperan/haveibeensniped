@@ -1,17 +1,70 @@
+import {
+  CurrentGame,
+  Region,
+  RepeatPlayer,
+  ScanCurrentGame,
+  ScanResponse,
+  SnipedPlayer,
+} from '../types';
 
-import { Region, CurrentGame, SnipedPlayer, Player } from '../types';
+const API_URL = (
+  import.meta as ImportMeta & {
+    env?: {
+      VITE_API_URL?: string;
+    };
+  }
+).env?.VITE_API_URL || 'http://localhost:5000';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const getErrorMessage = async (response: Response, fallback: string): Promise<string> => {
+  try {
+    const errorData = await response.json() as { error?: string };
+    return errorData.error || fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+export const mapScanCurrentGameToCurrentGame = (game: ScanCurrentGame): CurrentGame => ({
+  gameId: game.gameId,
+  gameMode: game.gameMode,
+  gameStartTime: game.gameStartTime,
+  participants: game.participants.map((participant) => ({
+    summonerName: participant.gameName,
+    tagLine: participant.tagLine,
+    puuid: participant.puuid,
+    championId: participant.championId,
+    teamId: participant.teamId,
+  })),
+});
+
+export const mapRepeatPlayersToSnipedPlayers = (
+  repeatPlayers: RepeatPlayer[],
+): SnipedPlayer[] => repeatPlayers.map((player) => ({
+  summonerName: player.gameName,
+  tagLine: player.tagLine,
+  puuid: player.puuid,
+  championId: player.championId,
+  matches: player.matches.map((match) => ({
+    matchId: match.matchId,
+    timestamp: match.timestamp,
+    win: match.win,
+    team: match.team,
+    playerChampId: match.playerChampId,
+    targetChampId: match.targetChampId,
+  })),
+  totalGames: player.totalGames,
+  wins: player.wins,
+  losses: player.losses,
+}));
 
 /**
  * Riot API Service
- * Communicates with the backend to fetch game data from Riot API
+ * Communicates with the backend scan endpoint.
  */
 export class RiotService {
-  
-  static async checkInGame(gameName: string, tagLine: string, region: Region): Promise<CurrentGame | null> {
+  static async scan(gameName: string, tagLine: string, region: Region): Promise<ScanResponse> {
     try {
-      const response = await fetch(`${API_URL}/api/check-game`, {
+      const response = await fetch(`${API_URL}/api/scan`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -19,61 +72,17 @@ export class RiotService {
         body: JSON.stringify({
           gameName,
           tagLine,
-          region
-        })
+          region,
+        }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        
-        // If player is not in game, return null (not an error)
-        if (errorData.inGame === false) {
-          return null;
-        }
-        
-        // Other errors
-        throw new Error(errorData.error || 'Failed to check game status');
+        throw new Error(await getErrorMessage(response, 'Failed to scan current lobby'));
       }
 
-      const data = await response.json();
-      
-      // If backend explicitly says not in game
-      if (data.inGame === false) {
-        return null;
-      }
-
-      return data;
-      
+      return await response.json() as ScanResponse;
     } catch (error) {
-      console.error('Error checking in-game status:', error);
-      throw error;
-    }
-  }
-
-  static async analyzeSnipes(userPuuid: string, lobby: Player[], region: Region): Promise<SnipedPlayer[]> {
-    try {
-      const response = await fetch(`${API_URL}/api/analyze-snipes`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userPuuid,
-          participants: lobby,
-          region
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to analyze match history');
-      }
-
-      const snipes: SnipedPlayer[] = await response.json();
-      return snipes;
-      
-    } catch (error) {
-      console.error('Error analyzing snipes:', error);
+      console.error('Error scanning lobby:', error);
       throw error;
     }
   }

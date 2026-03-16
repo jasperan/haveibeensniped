@@ -4,7 +4,11 @@ import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import LobbyTracker from './components/LobbyTracker';
 import SnipeHistory from './components/SnipeHistory';
-import { RiotService } from './services/riotService';
+import {
+  RiotService,
+  mapRepeatPlayersToSnipedPlayers,
+  mapScanCurrentGameToCurrentGame,
+} from './services/riotService';
 import { CurrentGame, SnipedPlayer, Region } from './types';
 
 const App: React.FC = () => {
@@ -22,24 +26,17 @@ const App: React.FC = () => {
     setSearchedUser({ name, tag });
 
     try {
-      // 1. Check if In Game
-      const game = await RiotService.checkInGame(name, tag, region);
-      
-      if (!game) {
+      const scan = await RiotService.scan(name, tag, region);
+
+      if (!scan.currentGame) {
         setError(`Summoner ${name}#${tag} is currently not in a live game. Make sure you are in a loading screen or game!`);
-        setLoading(false);
         return;
       }
 
-      setCurrentGame(game);
-
-      // 2. Fetch History & Cross-reference
-      const userPuuid = game.participants.find(p => p.summonerName.toLowerCase() === name.toLowerCase())?.puuid || 'user-puuid';
-      const snipes = await RiotService.analyzeSnipes(userPuuid, game.participants, region);
-      
-      setSnipedPlayers(snipes);
+      setCurrentGame(mapScanCurrentGameToCurrentGame(scan.currentGame));
+      setSnipedPlayers(mapRepeatPlayersToSnipedPlayers(scan.repeatPlayers));
     } catch (err) {
-      setError("An unexpected error occurred while communicating with the Riot API.");
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred while communicating with the Riot API.');
       console.error(err);
     } finally {
       setLoading(false);
