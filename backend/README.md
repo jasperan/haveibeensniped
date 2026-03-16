@@ -28,6 +28,25 @@ python main.py
 
 The server will start on `http://localhost:5000` by default.
 
+## Local Encounter Memory
+
+A successful manual `POST /api/scan` call writes local encounter memory into SQLite. It stores:
+
+- the tracked Riot ID you scanned
+- the current lobby snapshot for that scan
+- shared matches for the current lobby players
+- local repeat-player risk scoring built from saved encounters
+
+By default, the database lives at `backend/data/haveibeensniped.db`. Fresh installs start empty. Delete that file if you want a reset.
+
+**Repeat-player tiers**
+- **background**: there is some history, but not much signal yet
+- **repeat**: the player has shown up more than once
+- **watch**: the recurrence looks strong enough to keep an eye on
+- **high-attention**: the player keeps surfacing across saved scans
+
+These labels describe encounter recurrence, not intent. They are local heuristics, not accusations.
+
 ## API Endpoints
 
 ### Health Check
@@ -37,9 +56,9 @@ GET /health
 
 Returns server status.
 
-### Check Live Game
+### Manual Scan
 ```
-POST /api/check-game
+POST /api/scan
 Content-Type: application/json
 
 {
@@ -49,29 +68,7 @@ Content-Type: application/json
 }
 ```
 
-Checks if a player is currently in a live game and returns lobby information.
-
-### Analyze Snipes
-```
-POST /api/analyze-snipes
-Content-Type: application/json
-
-{
-  "userPuuid": "abc123...",
-  "participants": [
-    {
-      "puuid": "xyz789...",
-      "summonerName": "Player",
-      "tagLine": "TAG",
-      "championId": 1,
-      "teamId": 100
-    }
-  ],
-  "region": "NA1"
-}
-```
-
-Analyzes the user's last 100 matches to find overlaps with current lobby participants.
+Resolves the tracked Riot ID, checks the live lobby, stores the scan locally, and returns repeat-player results built from shared match history.
 
 ## Configuration Options
 
@@ -79,6 +76,7 @@ Analyzes the user's last 100 matches to find overlaps with current lobby partici
 
 - `riot_api_key`: Your Riot Games API key (required)
 - `port`: Server port (default: 5000)
+- `database_path`: SQLite file for local encounter memory (default: `data/haveibeensniped.db`)
 - `cors_origins`: List of allowed frontend origins for CORS
 - `cache_enabled`: Enable PUUID caching (default: true)
 - `cache_ttl`: Cache time-to-live in seconds (default: 300)
@@ -103,7 +101,7 @@ The backend handles:
 - Invalid API keys
 - Rate limiting (429 errors with retry)
 - Player not found (404)
-- Not in game (returns `inGame: false`)
+- Not in game (returns `scan.status: "not_in_game"` and `currentGame: null`)
 - Network timeouts
 
 ## Development
@@ -114,8 +112,8 @@ The backend handles:
 # Health check
 curl http://localhost:5000/health
 
-# Check game
-curl -X POST http://localhost:5000/api/check-game \
+# Manual scan
+curl -X POST http://localhost:5000/api/scan \
   -H "Content-Type: application/json" \
   -d '{"gameName":"PlayerName","tagLine":"TAG","region":"NA1"}'
 ```
@@ -127,6 +125,13 @@ Riot API rate limits for development keys:
 - 100 requests per 2 minutes
 
 The backend respects these limits and will automatically retry with backoff on 429 errors.
+
+## Verification
+
+```bash
+cd backend && python -m pytest -q
+npm run build
+```
 
 ## Production Deployment
 

@@ -13,6 +13,25 @@ Check if you're playing with stream snipers! This tool analyzes your current Lea
 - **Win/Loss Tracking**: See your history with each player
 - **All Regions Supported**: Works with all Riot Games regions
 
+## Local Encounter Memory
+
+Successful manual scans now leave a local paper trail. Each successful scan stores:
+
+- the tracked Riot ID you searched
+- the current lobby snapshot for that scan
+- shared matches pulled from the last 100 games
+- local repeat-player risk scoring for anyone who keeps showing up
+
+By default, that data lives in `backend/data/haveibeensniped.db`. Fresh installs start blank. Delete that file if you want a hard reset.
+
+**Repeat-player tiers**
+- **background**: some history exists, but the pattern is still light
+- **repeat**: this player has shown up more than once
+- **watch**: the repeat pattern is getting harder to ignore
+- **high-attention**: this player keeps surfacing across saved scans
+
+These labels describe encounter recurrence, not intent. They tell you who keeps reappearing in local memory, not why.
+
 ## Prerequisites
 
 - **Node.js** (v16 or higher)
@@ -162,14 +181,20 @@ python backend/cli.py
 
 ### API Endpoints
 
-- `POST /api/check-game` - Check if player is in a live game
-- `POST /api/analyze-snipes` - Analyze match history for overlaps
+- `POST /api/scan` - Run a manual scan, persist the local lobby snapshot and shared matches, then return repeat-player scoring
 
 ### Regional Routing
 
 The backend handles two types of Riot API routing:
 - **Regional**: americas, europe, asia, sea (for Account API)
 - **Platform**: na1, euw1, kr, etc. (for game-specific APIs)
+
+## Verification
+
+```bash
+cd backend && python -m pytest -q
+npm run build
+```
 
 ## Credits
 
