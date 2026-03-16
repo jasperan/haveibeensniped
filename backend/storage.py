@@ -230,7 +230,7 @@ class Storage:
                 """
                 SELECT id, puuid, game_name, tag_line, region
                 FROM tracked_profiles
-                WHERE game_name = ? AND tag_line = ?
+                WHERE lower(game_name) = lower(?) AND lower(tag_line) = lower(?)
                 ORDER BY updated_at DESC, id DESC
                 LIMIT 1
                 """,

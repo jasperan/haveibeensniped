@@ -44,6 +44,28 @@ def test_live_client_status_matches_saved_tracked_profile(tmp_path):
     assert payload["canAutoScan"] is True
 
 
+def test_live_client_status_matches_saved_profile_case_insensitively(tmp_path):
+    storage = Storage(tmp_path / "hibs.db")
+    storage.upsert_tracked_profile("self-puuid", "stReaMer", "na1", "NA1")
+    app = create_app(
+        {
+            "TESTING": True,
+            "RIOT_API_KEY": "test-key",
+            "DATABASE_PATH": str(tmp_path / "hibs.db"),
+            "CORS_ORIGINS": ["http://localhost:4000"],
+        },
+        riot_client=object(),
+        storage=storage,
+        live_client=FakeLiveClient(),
+    )
+
+    payload = app.test_client().get("/api/live-client/status").get_json()
+
+    assert payload["matchedProfile"]["gameName"] == "stReaMer"
+    assert payload["matchedProfile"]["tagLine"] == "na1"
+    assert payload["canAutoScan"] is True
+
+
 def test_live_client_status_returns_disconnected_cleanly(tmp_path):
     class OfflineLiveClient:
         def get_status(self):
