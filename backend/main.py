@@ -6,6 +6,7 @@ import yaml
 
 from app_factory import create_app
 from riot_client import RiotAPIClient
+from storage import Storage
 
 
 def load_runtime_config():
@@ -37,7 +38,7 @@ def load_runtime_config():
 
 def build_storage(config):
     """Build the runtime storage dependency."""
-    return {"database_path": config["DATABASE_PATH"]}
+    return Storage(config["DATABASE_PATH"])
 
 
 def main():
