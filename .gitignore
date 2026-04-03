@@ -36,6 +36,7 @@ backend/*.pyc
 backend/.pytest_cache
 backend/venv
 backend/.venv
+backend/.cli_memory.json
 *.db
 
 # Python

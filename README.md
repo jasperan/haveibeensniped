@@ -80,6 +80,8 @@ What it does not do yet:
 
 ```bash
 cd backend
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 cp config.yaml.example config.yaml
 python main.py
@@ -102,7 +104,7 @@ The frontend will start on `http://localhost:4000`
 ### 3. Try the App Immediately in Demo Mode
 
 1. Leave `backend/config.yaml.example` as-is, or set `HIBS_DEMO_MODE=1`
-2. Start the backend with `npm run demo:backend` or `cd backend && HIBS_DEMO_MODE=1 python main.py`
+2. Start the backend with `npm run demo:backend` or `cd backend && source .venv/bin/activate && HIBS_DEMO_MODE=1 python main.py`
 3. Start the frontend with `npm run dev`
 4. Open `http://localhost:4000`
 5. Click **Try Demo Scan**

@@ -7,6 +7,8 @@ Python Flask backend that interfaces with the Riot Games API to check for stream
 ### 1. Install Dependencies
 
 ```bash
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
@@ -23,6 +25,7 @@ You can start in **demo mode** with the example config as-is, or by setting `HIB
 ### 3. Run the Server
 
 ```bash
+source .venv/bin/activate
 python main.py
 ```
 

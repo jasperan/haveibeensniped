@@ -83,7 +83,15 @@ install_deps() {
     success "Dependencies installed"
 
     info "Installing backend dependencies..."
-    python3 -m pip install -r backend/requirements.txt
+    if [ ! -d backend/.venv ]; then
+        python3 -m venv backend/.venv
+        success "Created backend virtual environment"
+    fi
+    # shellcheck disable=SC1091
+    source backend/.venv/bin/activate
+    python -m pip install --upgrade pip >/dev/null
+    python -m pip install -r backend/requirements.txt
+    deactivate
     success "Backend dependencies installed"
 
     if [ ! -f backend/config.yaml ]; then
@@ -122,7 +130,7 @@ print_done() {
     echo ""
     echo -e "  ${BOLD}Location:${NC}  $INSTALL_DIR"
     echo -e "  ${BOLD}Demo:${NC}      cd $INSTALL_DIR && $PKG_MGR run demo"
-    echo -e "  ${BOLD}Backend:${NC}   cd $INSTALL_DIR/backend && python3 main.py"
+    echo -e "  ${BOLD}Backend:${NC}   cd $INSTALL_DIR/backend && source .venv/bin/activate && python main.py"
     echo -e "  ${BOLD}Frontend:${NC}  cd $INSTALL_DIR && $PKG_MGR run dev"
     echo -e "  ${BOLD}Tip:${NC}       Demo mode works even before you add a real Riot API key"
     echo ""

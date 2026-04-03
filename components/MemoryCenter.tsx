@@ -29,7 +29,7 @@ const MemoryCenter: React.FC<MemoryCenterProps> = ({ summary, loading }) => {
   ];
 
   return (
-    <section className="mt-16 px-4">
+    <section data-testid="memory-center" className="mt-16 px-4">
       <div className="mx-auto max-w-6xl space-y-8">
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
