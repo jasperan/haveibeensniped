@@ -10,7 +10,18 @@ import yaml
 
 DEFAULT_RUNTIME_CONFIG = {
     "PORT": 5000,
-    "CORS_ORIGINS": ["http://localhost:4000"],
+    "CORS_ORIGINS": [
+        "http://localhost:4000",
+        "http://127.0.0.1:4000",
+        "http://localhost:4001",
+        "http://127.0.0.1:4001",
+        "http://localhost:4002",
+        "http://127.0.0.1:4002",
+        "http://localhost:4003",
+        "http://127.0.0.1:4003",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
     "DATABASE_PATH": "data/haveibeensniped.db",
     "CACHE_ENABLED": True,
     "CACHE_TTL": 300,
@@ -64,6 +75,7 @@ def load_runtime_config(config_path: str | Path | None = None) -> dict:
         demo_mode = env_demo_mode
 
     api_key = file_config.get("riot_api_key")
+    api_configured = bool(api_key and api_key != "RGAPI-YOUR-API-KEY-HERE")
     if not demo_mode and (not api_key or api_key == "RGAPI-YOUR-API-KEY-HERE"):  # pragma: allowlist secret
         print("Error: Please set a valid Riot API key in config.yaml")
         raise SystemExit(1)
@@ -77,9 +89,10 @@ def load_runtime_config(config_path: str | Path | None = None) -> dict:
     return {
         "RIOT_API_KEY": api_key,
         "DATABASE_PATH": str(database_path),
-        "CORS_ORIGINS": file_config.get(
-            "cors_origins", DEFAULT_RUNTIME_CONFIG["CORS_ORIGINS"]
-        ),
+        "CORS_ORIGINS": list(dict.fromkeys([
+            *(file_config.get("cors_origins") or []),
+            *DEFAULT_RUNTIME_CONFIG["CORS_ORIGINS"],
+        ])),
         "PORT": file_config.get("port", DEFAULT_RUNTIME_CONFIG["PORT"]),
         "CACHE_ENABLED": file_config.get(
             "cache_enabled", DEFAULT_RUNTIME_CONFIG["CACHE_ENABLED"]
@@ -90,6 +103,7 @@ def load_runtime_config(config_path: str | Path | None = None) -> dict:
             DEFAULT_RUNTIME_CONFIG["RATE_LIMIT_PER_SECOND"],
         ),
         "DEMO_MODE": bool(demo_mode),
+        "API_CONFIGURED": api_configured,
     }
 
 

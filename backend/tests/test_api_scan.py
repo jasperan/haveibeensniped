@@ -98,7 +98,7 @@ def test_scan_endpoint_requires_configured_riot_client(tmp_path):
         "RIOT_API_KEY": None,
         "DATABASE_PATH": str(tmp_path / "test.db"),
         "CORS_ORIGINS": ["http://localhost:4000"],
-    }, riot_client=None, storage=object(), scan_service=FakeScanService())
+    }, riot_client=None, storage=object(), scan_service=None)
 
     response = app.test_client().post("/api/scan", json={
         "gameName": "Streamer",

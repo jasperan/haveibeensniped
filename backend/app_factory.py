@@ -3,11 +3,23 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
+from demo_data import DemoRiotClient
 from live_client import LiveClient
 from scan_service import ScanService
 
 
-DEFAULT_CORS_ORIGINS = ["http://localhost:4000"]
+DEFAULT_CORS_ORIGINS = [
+    "http://localhost:4000",
+    "http://127.0.0.1:4000",
+    "http://localhost:4001",
+    "http://127.0.0.1:4001",
+    "http://localhost:4002",
+    "http://127.0.0.1:4002",
+    "http://localhost:4003",
+    "http://127.0.0.1:4003",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
 SCAN_ENDPOINT = {
     "method": "POST",
     "path": "/api/scan",
@@ -27,7 +39,23 @@ def disconnected_live_client_status():
     }
 
 
-def create_app(config: dict, riot_client=None, storage=None, scan_service=None, live_client=None):
+def api_is_configured(config: dict) -> bool:
+    configured_flag = config.get("API_CONFIGURED")
+    if configured_flag is not None:
+        return bool(configured_flag)
+
+    api_key = config.get("RIOT_API_KEY")  # pragma: allowlist secret
+    return bool(api_key and api_key != "RGAPI-YOUR-API-KEY-HERE")  # pragma: allowlist secret
+
+
+def create_app(
+    config: dict,
+    riot_client=None,
+    storage=None,
+    scan_service=None,
+    live_client=None,
+    demo_scan_service=None,
+):
     """Create a configured Flask application instance."""
     app = Flask(__name__)
     app.config["CORS_ORIGINS"] = DEFAULT_CORS_ORIGINS.copy()
@@ -38,9 +66,12 @@ def create_app(config: dict, riot_client=None, storage=None, scan_service=None, 
     if live_client is None:
         live_client = LiveClient()
     app.extensions["live_client"] = live_client
-    if scan_service is None:
+    if scan_service is None and riot_client is not None:
         scan_service = ScanService(storage=storage, riot_client=riot_client)
     app.extensions["scan_service"] = scan_service
+    if demo_scan_service is None and app.config.get("DEMO_MODE"):
+        demo_scan_service = ScanService(storage=storage, riot_client=DemoRiotClient())
+    app.extensions["demo_scan_service"] = demo_scan_service
 
     CORS(
         app,
@@ -63,7 +94,7 @@ def create_app(config: dict, riot_client=None, storage=None, scan_service=None, 
         if not game_name or not tag_line or not region:
             return jsonify({"error": "Missing gameName, tagLine, or region"}), 400
 
-        if not app.config.get("DEMO_MODE") and app.extensions.get("riot_client") is None:
+        if app.extensions.get("scan_service") is None:
             return jsonify({"error": "Riot API is not configured"}), 503
 
         try:
@@ -84,9 +115,12 @@ def create_app(config: dict, riot_client=None, storage=None, scan_service=None, 
     def demo_scan():
         if not app.config.get("DEMO_MODE"):
             return jsonify({"error": "Demo mode is disabled"}), 404
+        demo_service = app.extensions.get("demo_scan_service")
+        if demo_service is None:
+            return jsonify({"error": "Demo mode is unavailable"}), 503
 
         try:
-            result = app.extensions["scan_service"].run_manual_scan(
+            result = demo_service.run_manual_scan(
                 "Streamer",
                 "NA1",
                 "NA1",
@@ -100,12 +134,10 @@ def create_app(config: dict, riot_client=None, storage=None, scan_service=None, 
 
     @app.route("/api/status", methods=["GET"])
     def app_status():
-        api_key = app.config.get("RIOT_API_KEY")
-        api_configured = bool(api_key and api_key != "RGAPI-YOUR-API-KEY-HERE")
         return jsonify({
             "status": "running",
             "demoMode": bool(app.config.get("DEMO_MODE")),
-            "apiConfigured": api_configured,
+            "apiConfigured": api_is_configured(app.config),
             "port": app.config.get("PORT", 5000),
         }), 200
 
@@ -141,15 +173,19 @@ def create_app(config: dict, riot_client=None, storage=None, scan_service=None, 
                 active_player.get("tagLine"),
             )
 
+        auto_scan_enabled = bool(
+            status.get("connected")
+            and status.get("inGame")
+            and status.get("sessionFingerprint")
+            and matched_profile
+        )
+        if app.config.get("DEMO_MODE") and not api_is_configured(app.config):
+            auto_scan_enabled = False
+
         return jsonify({
             **status,
             "matchedProfile": matched_profile,
-            "canAutoScan": bool(
-                status.get("connected")
-                and status.get("inGame")
-                and status.get("sessionFingerprint")
-                and matched_profile
-            ),
+            "canAutoScan": auto_scan_enabled,
         }), 200
 
     @app.route("/api/tracked-profiles/<int:tracked_profile_id>/memory", methods=["GET"])

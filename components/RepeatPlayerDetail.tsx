@@ -1,7 +1,6 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { CHAMPION_MAP, getChampIcon } from '../constants';
 import { RepeatPlayer, RiskTier } from '../types';
-import { useState } from 'react';
 
 interface RepeatPlayerDetailProps {
   player: RepeatPlayer | null;
@@ -257,6 +256,9 @@ const RepeatPlayerDetail: React.FC<RepeatPlayerDetailProps> = ({
                   />
                   {noteError && (
                     <div className="mt-3 text-sm text-rose-300">{noteError}</div>
+                  )}
+                  {!noteError && !noteSaving && player.watchNote === draftNote.trim() && draftNote.trim() && (
+                    <div className="mt-3 text-sm text-emerald-300">Saved in local memory.</div>
                   )}
                   <div className="mt-4 flex flex-wrap gap-3">
                     <button

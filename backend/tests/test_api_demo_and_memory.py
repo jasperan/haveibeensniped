@@ -1,5 +1,6 @@
 from app_factory import create_app
 from demo_data import DemoLiveClient, DemoRiotClient
+from scan_service import ScanService
 from storage import Storage
 
 
@@ -12,10 +13,12 @@ def build_app(tmp_path):
             "DATABASE_PATH": str(tmp_path / "hibs.db"),
             "CORS_ORIGINS": ["http://localhost:4000"],
             "DEMO_MODE": True,
+            "API_CONFIGURED": False,
         },
-        riot_client=DemoRiotClient(),
+        riot_client=None,
         storage=storage,
         live_client=DemoLiveClient(),
+        demo_scan_service=ScanService(storage=storage, riot_client=DemoRiotClient()),
     )
     return app, storage
 
@@ -42,7 +45,7 @@ def test_demo_scan_populates_memory_and_overview(tmp_path):
     assert scan_payload["scan"]["source"] == "demo"
     assert scan_payload["currentGame"]["participants"]
     assert len(scan_payload["repeatPlayers"]) >= 3
-    assert scan_payload["repeatPlayers"][0]["note"] is None
+    assert scan_payload["repeatPlayers"][0]["watchNote"] is None
 
     overview_response = client.get(
         f"/api/tracked-profiles/{scan_payload['trackedProfile']['id']}/memory"
@@ -61,10 +64,7 @@ def test_demo_scan_populates_memory_and_overview(tmp_path):
 def test_watch_note_round_trip_and_clear_works(tmp_path):
     app, _storage = build_app(tmp_path)
     client = app.test_client()
-    scan_payload = client.post(
-        "/api/scan",
-        json={"gameName": "Streamer", "tagLine": "NA1", "region": "NA1"},
-    ).get_json()
+    scan_payload = client.post("/api/demo/scan").get_json()
     tracked_profile_id = scan_payload["trackedProfile"]["id"]
     player_puuid = scan_payload["repeatPlayers"][0]["puuid"]
 
@@ -106,3 +106,13 @@ def test_watch_note_returns_not_found_for_unknown_player(tmp_path):
 
     assert response.status_code == 404
     assert response.get_json()["error"] == "Player not found"
+
+
+def test_demo_mode_live_status_disables_auto_scan(tmp_path):
+    app, _storage = build_app(tmp_path)
+
+    payload = app.test_client().get("/api/live-client/status").get_json()
+
+    assert payload["connected"] is True
+    assert payload["inGame"] is True
+    assert payload["canAutoScan"] is False

@@ -193,7 +193,7 @@ const App: React.FC = () => {
       throw new Error('No tracked profile is loaded yet.');
     }
 
-    const savedNote = await RiotService.saveWatchNote(trackedProfileId, playerPuuid, note);
+    const { note: savedNote } = await RiotService.saveWatchNote(trackedProfileId, playerPuuid, note);
 
     setRepeatPlayers((existingPlayers) => existingPlayers.map((player) => (
       player.puuid === playerPuuid

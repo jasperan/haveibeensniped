@@ -24,8 +24,8 @@ const MemoryCenter: React.FC<MemoryCenterProps> = ({ summary, loading }) => {
   const statCards = [
     { label: 'Tracked profiles', value: summary.stats.trackedProfileCount },
     { label: 'Saved scans', value: summary.stats.scanCount },
+    { label: 'Shared encounters', value: summary.stats.encounterCount },
     { label: 'Repeat players', value: summary.stats.repeatPlayerCount },
-    { label: 'Watch notes', value: summary.stats.watchNoteCount },
   ];
 
   return (
@@ -45,6 +45,11 @@ const MemoryCenter: React.FC<MemoryCenterProps> = ({ summary, loading }) => {
           {summary.stats.highAttentionCount > 0 && (
             <div className="rounded-full border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-rose-300">
               {summary.stats.highAttentionCount} high-attention patterns
+            </div>
+          )}
+          {summary.stats.watchNoteCount > 0 && (
+            <div className="rounded-full border border-amber-500/20 bg-amber-500/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-amber-300">
+              {summary.stats.watchNoteCount} watch note{summary.stats.watchNoteCount === 1 ? '' : 's'}
             </div>
           )}
         </div>

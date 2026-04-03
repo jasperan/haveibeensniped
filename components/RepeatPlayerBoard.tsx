@@ -97,7 +97,7 @@ const RepeatPlayerBoard: React.FC<RepeatPlayerBoardProps> = ({
         {players.map((player) => {
           const tierStyle = TIER_STYLES[player.risk.tier];
           const relation = getRelationPresentation(player.relation);
-          const reasonPreview = player.risk.reasons[0] || 'Flagged from saved encounter memory';
+          const reasonPreview = player.watchNote || player.risk.reasons[0] || 'Flagged from saved encounter memory';
           const extraReasonCount = Math.max(player.risk.reasons.length - 1, 0);
 
           return (
@@ -160,13 +160,22 @@ const RepeatPlayerBoard: React.FC<RepeatPlayerBoardProps> = ({
               </p>
 
               <div className="mt-4 flex items-center justify-between gap-3">
-                <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${relation.badgeClassName}`}>
-                  {relation.label}
-                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${relation.badgeClassName}`}>
+                    {relation.label}
+                  </span>
+                  {player.watchNote && (
+                    <span className="inline-flex rounded-full border border-amber-500/20 bg-amber-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-amber-300">
+                      note saved
+                    </span>
+                  )}
+                </div>
                 <span className="text-xs font-semibold text-zinc-500">
-                  {extraReasonCount > 0
-                    ? `+${extraReasonCount} more reason${extraReasonCount === 1 ? '' : 's'}`
-                    : 'Open evidence'}
+                  {player.watchNote
+                    ? 'Open note'
+                    : extraReasonCount > 0
+                      ? `+${extraReasonCount} more reason${extraReasonCount === 1 ? '' : 's'}`
+                      : 'Open evidence'}
                 </span>
               </div>
             </button>

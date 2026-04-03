@@ -100,6 +100,8 @@ class DemoRiotClient:
     def get_puuid_by_riot_id(self, game_name: str, tag_line: str, region: str) -> str | None:
         if not game_name or not tag_line or not region:
             return None
+        if game_name.strip().lower() != "streamer" or tag_line.strip().lower() != "na1":
+            return None
         return DEMO_PUUID
 
     def get_active_game(self, puuid: str, region: str) -> dict | None:
