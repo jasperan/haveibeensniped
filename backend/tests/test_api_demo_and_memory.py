@@ -34,6 +34,18 @@ def test_status_endpoint_reports_demo_mode(tmp_path):
     assert payload["apiConfigured"] is False
 
 
+def test_manual_scan_requires_real_api_when_running_demo_only(tmp_path):
+    app, _storage = build_app(tmp_path)
+    response = app.test_client().post("/api/scan", json={
+        "gameName": "Streamer",
+        "tagLine": "NA1",
+        "region": "NA1",
+    })
+
+    assert response.status_code == 503
+    assert response.get_json()["error"] == "Riot API is not configured"
+
+
 def test_demo_scan_populates_memory_and_overview(tmp_path):
     app, _storage = build_app(tmp_path)
     client = app.test_client()
@@ -106,6 +118,23 @@ def test_watch_note_returns_not_found_for_unknown_player(tmp_path):
 
     assert response.status_code == 404
     assert response.get_json()["error"] == "Player not found"
+
+
+def test_watch_note_rejects_player_not_linked_to_tracked_profile(tmp_path):
+    app, storage = build_app(tmp_path)
+    client = app.test_client()
+    scan_payload = client.post("/api/demo/scan").get_json()
+    tracked_profile_id = scan_payload["trackedProfile"]["id"]
+
+    storage.upsert_player("other-player", "Other", "TAG", "NA1", "resolved")
+
+    response = client.put(
+        f"/api/tracked-profiles/{tracked_profile_id}/players/other-player/note",
+        json={"note": "hello"},
+    )
+
+    assert response.status_code == 404
+    assert response.get_json()["error"] == "Player is not linked to tracked profile"
 
 
 def test_demo_mode_live_status_disables_auto_scan(tmp_path):

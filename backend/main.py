@@ -17,16 +17,23 @@ def build_storage(config):
 
 def build_riot_client(config):
     """Build the Riot provider for the current runtime mode."""
+    if config.get("API_CONFIGURED"):
+        return RiotAPIClient(config["RIOT_API_KEY"])
     if config.get("DEMO_MODE"):
-        return DemoRiotClient()
-    return RiotAPIClient(config["RIOT_API_KEY"])
+        return None
+    raise ValueError("Riot API is not configured and demo mode is disabled")
 
 
 def build_live_client(config):
     """Build the live-client provider for the current runtime mode."""
-    if config.get("DEMO_MODE"):
+    if config.get("DEMO_MODE") and not config.get("API_CONFIGURED"):
         return DemoLiveClient()
     return LiveClient()
+
+
+def get_bind_host() -> str:
+    """Resolve the runtime bind host, defaulting to localhost for safety."""
+    return os.getenv("HIBS_BIND_HOST", "127.0.0.1")
 
 
 def main():
@@ -40,8 +47,9 @@ def main():
     print(f"Starting server on port {port}...")
     print(f"CORS enabled for: {app.config.get('CORS_ORIGINS')}")
     print(f"Demo mode: {app.config.get('DEMO_MODE')}")
+    print(f"Bind host: {get_bind_host()}")
     app.run(
-        host="0.0.0.0",
+        host=get_bind_host(),
         port=port,
         debug=os.getenv("FLASK_DEBUG", "").lower() in ("1", "true"),
     )

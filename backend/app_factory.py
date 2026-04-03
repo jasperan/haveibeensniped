@@ -217,6 +217,8 @@ def create_app(
             return jsonify({"error": "Tracked profile not found"}), 404
         if storage.get_player(player_puuid) is None:
             return jsonify({"error": "Player not found"}), 404
+        if not storage.tracked_profile_has_player(tracked_profile_id, player_puuid):
+            return jsonify({"error": "Player is not linked to tracked profile"}), 404
 
         payload = request.get_json(silent=True)
         note = None

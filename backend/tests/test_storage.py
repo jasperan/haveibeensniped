@@ -40,6 +40,18 @@ def test_insert_encounter_dedupes_same_match(tmp_path):
     assert storage.count_encounters() == 1
 
 
+def test_tracked_profile_has_player_only_when_encounter_exists(tmp_path):
+    storage = Storage(tmp_path / "hibs.db")
+    profile_id = storage.upsert_tracked_profile("self", "Streamer", "NA1", "NA1")
+    storage.upsert_player("target", "Enemy", "TAG", "NA1", "resolved")
+    storage.upsert_player("other", "Other", "TAG", "NA1", "resolved")
+    scan_id = storage.insert_scan(profile_id, "manual", "NA1", 123, "CLASSIC", "ok", 1.0, 0)
+    storage.insert_encounter(profile_id, "target", scan_id, "MATCH-1", "2026-03-16T00:00:00Z", "enemy", 81, 157, 1)
+
+    assert storage.tracked_profile_has_player(profile_id, "target") is True
+    assert storage.tracked_profile_has_player(profile_id, "other") is False
+
+
 def test_initialize_migrates_scans_table_for_not_in_game_rows(tmp_path):
     db_path = tmp_path / "hibs.db"
 

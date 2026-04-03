@@ -294,6 +294,20 @@ class Storage:
             "resolutionStatus": row["resolution_status"],
         }
 
+    def tracked_profile_has_player(self, tracked_profile_id: int, player_puuid: str) -> bool:
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                SELECT 1
+                FROM encounters
+                WHERE tracked_profile_id = ? AND player_puuid = ?
+                LIMIT 1
+                """,
+                (tracked_profile_id, player_puuid),
+            ).fetchone()
+
+        return row is not None
+
     def upsert_player(self, puuid, game_name, tag_line, region, resolution_status) -> int:
         with self._connect() as connection:
             connection.execute(
