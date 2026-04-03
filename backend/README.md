@@ -100,7 +100,7 @@ Returns local game-client state, the active Riot ID when available, a saved trac
 
 ### config.yaml
 
-- `riot_api_key`: Your Riot Games API key (required)
+- `riot_api_key`: Your Riot Games API key (required for live Riot scans, optional in demo mode)
 - `port`: Server port (default: 5000)
 - `database_path`: SQLite file for local encounter memory (default: `data/haveibeensniped.db`)
 - `cors_origins`: List of allowed frontend origins for CORS
@@ -156,7 +156,7 @@ The backend respects these limits and will automatically retry with backoff on 4
 
 ```bash
 cd backend && python -m pytest -q
-npm run build
+npm run verify
 ```
 
 ## Production Deployment

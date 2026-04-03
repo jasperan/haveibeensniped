@@ -49,7 +49,7 @@ What it does not do yet:
 
 - **Node.js** (v16 or higher)
 - **Python 3.8+**
-- **Riot Games API Key** - Get yours at [Riot Developer Portal](https://developer.riotgames.com/)
+- **Riot Games API Key** *(optional for demo mode; required for live Riot scans)* - Get yours at [Riot Developer Portal](https://developer.riotgames.com/)
 
 ## Quick Start
 

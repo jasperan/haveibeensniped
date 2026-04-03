@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import LobbyTracker from './components/LobbyTracker';
@@ -101,6 +101,10 @@ const App: React.FC = () => {
   const [lastScanSource, setLastScanSource] = useState<'manual' | 'auto' | 'demo' | null>(null);
   const [memorySummary, setMemorySummary] = useState<MemorySummary | null>(null);
   const [memoryLoading, setMemoryLoading] = useState(false);
+  const loadingRef = useRef(false);
+  const autoScanInFlightRef = useRef(false);
+  const lastAutoScanFingerprintRef = useRef<string | null>(null);
+  const lastScanSourceRef = useRef<'manual' | 'auto' | 'demo' | null>(null);
 
   const snipedPlayers = useMemo(
     () => mapRepeatPlayersToSnipedPlayers(repeatPlayers),
@@ -180,6 +184,10 @@ const App: React.FC = () => {
         tag: scan.trackedProfile.tagLine,
       });
       setLastScanSource('demo');
+      if (liveClientStatus.sessionFingerprint) {
+        lastAutoScanFingerprintRef.current = liveClientStatus.sessionFingerprint;
+        setLastAutoScanFingerprint(liveClientStatus.sessionFingerprint);
+      }
       await loadMemorySummary();
     } catch (demoError) {
       setError(demoError instanceof Error ? demoError.message : 'Failed to run demo mode.');
@@ -208,6 +216,18 @@ const App: React.FC = () => {
     await loadMemorySummary();
   }, [loadMemorySummary, trackedProfileId]);
 
+  useEffect(() => {
+    loadingRef.current = loading;
+  }, [loading]);
+
+  useEffect(() => {
+    lastAutoScanFingerprintRef.current = lastAutoScanFingerprint;
+  }, [lastAutoScanFingerprint]);
+
+  useEffect(() => {
+    lastScanSourceRef.current = lastScanSource;
+  }, [lastScanSource]);
+
   const handleSearch = async (name: string, tag: string, region: Region) => {
     const didScan = await runScan(name, tag, region, { clearExisting: true, source: 'manual' });
 
@@ -218,6 +238,7 @@ const App: React.FC = () => {
       && liveClientStatus.matchedProfile?.gameName.toLowerCase() === name.toLowerCase()
       && liveClientStatus.matchedProfile?.tagLine.toLowerCase() === tag.toLowerCase()
     ) {
+      lastAutoScanFingerprintRef.current = liveClientStatus.sessionFingerprint;
       setLastAutoScanFingerprint(liveClientStatus.sessionFingerprint);
     }
   };
@@ -237,8 +258,9 @@ const App: React.FC = () => {
         setLiveClientStatus(status);
 
         if (!status.inGame || !status.sessionFingerprint) {
+          lastAutoScanFingerprintRef.current = null;
           setLastAutoScanFingerprint(null);
-          if (lastScanSource === 'auto') {
+          if (lastScanSourceRef.current === 'auto') {
             setCurrentGame(null);
             setRepeatPlayers([]);
             setSelectedRepeatPlayer(null);
@@ -246,23 +268,29 @@ const App: React.FC = () => {
           return;
         }
 
-        if (!status.canAutoScan || !status.matchedProfile || loading) {
+        if (!status.canAutoScan || !status.matchedProfile || loadingRef.current || autoScanInFlightRef.current) {
           return;
         }
 
-        if (status.sessionFingerprint === lastAutoScanFingerprint) {
+        if (status.sessionFingerprint === lastAutoScanFingerprintRef.current) {
           return;
         }
 
-        const didScan = await runScan(
-          status.matchedProfile.gameName,
-          status.matchedProfile.tagLine,
-          status.matchedProfile.region,
-          { clearExisting: false, source: 'auto' },
-        );
+        autoScanInFlightRef.current = true;
+        try {
+          const didScan = await runScan(
+            status.matchedProfile.gameName,
+            status.matchedProfile.tagLine,
+            status.matchedProfile.region,
+            { clearExisting: false, source: 'auto' },
+          );
 
-        if (!cancelled && didScan) {
-          setLastAutoScanFingerprint(status.sessionFingerprint);
+          if (!cancelled && didScan) {
+            lastAutoScanFingerprintRef.current = status.sessionFingerprint;
+            setLastAutoScanFingerprint(status.sessionFingerprint);
+          }
+        } finally {
+          autoScanInFlightRef.current = false;
         }
       } catch (pollError) {
         if (cancelled) return;
@@ -280,7 +308,7 @@ const App: React.FC = () => {
       cancelled = true;
       window.clearInterval(intervalId);
     };
-  }, [lastAutoScanFingerprint, lastScanSource, loading, runScan]);
+  }, [runScan]);
 
   const handleInspectRepeatPlayer = (puuid: string) => {
     const player = repeatPlayers.find((candidate) => candidate.puuid === puuid);

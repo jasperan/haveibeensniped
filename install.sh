@@ -12,9 +12,9 @@ set -euo pipefail
 #   PROJECT_DIR=/opt/myapp curl -fsSL ... | bash
 # ============================================================
 
-REPO_URL="https://github.com/jasperan/haveibeensniped.git"
+REPO_URL="${REPO_URL:-https://github.com/jasperan/haveibeensniped.git}"
 PROJECT="haveibeensniped"
-BRANCH="main"
+BRANCH="${BRANCH:-main}"
 INSTALL_DIR="${PROJECT_DIR:-$(pwd)/$PROJECT}"
 
 # ── Colors ──────────────────────────────────────────────────
