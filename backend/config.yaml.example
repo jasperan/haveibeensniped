@@ -1,7 +1,8 @@
 # Riot Games API Configuration
 # Get your API key from: https://developer.riotgames.com/
 
-riot_api_key: "RGAPI-YOUR-API-KEY-HERE"
+riot_api_key: "RGAPI-YOUR-API-KEY-HERE" # pragma: allowlist secret
+enable_demo_mode: true
 
 # Server configuration
 port: 5000
@@ -19,4 +20,3 @@ cache_ttl: 300  # seconds
 
 # Rate limiting
 rate_limit_per_second: 19  # Stay under Riot's 20 req/sec limit
-

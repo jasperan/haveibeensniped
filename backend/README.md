@@ -18,7 +18,7 @@ Copy the example config and add your Riot API key:
 cp config.yaml.example config.yaml
 ```
 
-Edit `config.yaml` and replace `RGAPI-YOUR-API-KEY-HERE` with your actual API key from [Riot Developer Portal](https://developer.riotgames.com/).
+You can start in **demo mode** with the example config as-is. When you're ready for real Riot scans, edit `config.yaml` and replace `RGAPI-YOUR-API-KEY-HERE` with your actual API key from [Riot Developer Portal](https://developer.riotgames.com/).
 
 ### 3. Run the Server
 
@@ -27,6 +27,10 @@ python main.py
 ```
 
 The server will start on `http://localhost:5000` by default.
+
+## Demo Mode
+
+If `enable_demo_mode: true`, the backend can start without a real Riot API key so the frontend can run a full guided demo flow. Real Riot-backed manual scans still require a valid key.
 
 ## Local Encounter Memory
 
@@ -164,4 +168,3 @@ For production:
 pip install gunicorn
 gunicorn -w 4 -b 0.0.0.0:5000 main:app
 ```
-

@@ -41,7 +41,8 @@ backend/.venv
 # Python
 *.py[cod]
 *$py.class
-__pycache__/CLAUDE.md
+__pycache__/
+CLAUDE.md
 
 # Claude-generated plan documents
 docs/plans/
@@ -77,4 +78,17 @@ worktrees/
 .openhands/
 .serena/
 .pi/
+.omx/
 content/
+
+# Local agent / Codex generated notes and plans
+IMPLEMENTATION.md
+*IMPLEMENTATION*.md
+PLAN.md
+*PLAN*.md
+AUTOPILOT*.md
+RALPH*.md
+ULTRAWORK*.md
+CODE_REVIEW*.md
+SECURITY_REVIEW*.md
+EXECUTION_SUMMARY*.md

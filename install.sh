@@ -71,6 +71,9 @@ check_prereqs() {
         fail "npm, yarn, or pnpm is required"
     fi
     success "Package manager: $PKG_MGR"
+
+    command_exists python3 || fail "python3 is required for the backend"
+    success "Python $(python3 --version | cut -d' ' -f2)"
 }
 
 install_deps() {
@@ -78,6 +81,19 @@ install_deps() {
     info "Installing dependencies..."
     $PKG_MGR install
     success "Dependencies installed"
+
+    info "Installing backend dependencies..."
+    python3 -m pip install -r backend/requirements.txt
+    success "Backend dependencies installed"
+
+    if [ ! -f backend/config.yaml ]; then
+        cp backend/config.yaml.example backend/config.yaml
+        success "Created backend/config.yaml from example"
+    fi
+
+    if [ ! -f .env.local ]; then
+        printf 'VITE_API_URL=http://localhost:5000\n' > .env.local
+    fi
 
     if grep -q '"build"' package.json 2>/dev/null; then
         info "Building project..."
@@ -100,7 +116,9 @@ print_done() {
     echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
     echo -e "  ${BOLD}Location:${NC}  $INSTALL_DIR"
-    echo -e "  ${BOLD}Start:${NC}    cd $INSTALL_DIR && $PKG_MGR start"
+    echo -e "  ${BOLD}Backend:${NC}   cd $INSTALL_DIR/backend && python3 main.py"
+    echo -e "  ${BOLD}Frontend:${NC}  cd $INSTALL_DIR && $PKG_MGR run dev"
+    echo -e "  ${BOLD}Tip:${NC}       Demo mode works even before you add a real Riot API key"
     echo ""
 }
 

@@ -82,23 +82,34 @@ What it does not do yet:
 cd backend
 pip install -r requirements.txt
 cp config.yaml.example config.yaml
-# Edit config.yaml and add your Riot API key
 python main.py
 ```
 
 The backend will start on `http://localhost:5000`
 
+**Demo-first note:** the backend can now run in demo mode with the example config, even before you add a real Riot API key. That lets you try the full UI flow immediately.
+
 ### 2. Frontend Setup
 
 ```bash
 npm install
-cp .env.local.example .env.local
+printf 'VITE_API_URL=http://localhost:5000\n' > .env.local
 npm run dev
 ```
 
 The frontend will start on `http://localhost:4000`
 
-### 3. Get a Riot API Key
+### 3. Try the App Immediately in Demo Mode
+
+1. Start the backend with `python main.py`
+2. Start the frontend with `npm run dev`
+3. Open `http://localhost:4000`
+4. Click **Try Demo Scan**
+5. Open a repeat-player card and save a watch note
+
+This path works without a live League client and without a real Riot API key.
+
+### 4. Get a Riot API Key
 
 1. Go to [Riot Developer Portal](https://developer.riotgames.com/)
 2. Sign in with your Riot account
