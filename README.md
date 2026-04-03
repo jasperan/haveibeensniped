@@ -93,7 +93,7 @@ The backend will start on `http://localhost:5000`
 
 ```bash
 npm install
-printf 'VITE_API_URL=http://localhost:5000\n' > .env.local
+cp .env.local.example .env.local
 npm run dev
 ```
 
@@ -101,13 +101,14 @@ The frontend will start on `http://localhost:4000`
 
 ### 3. Try the App Immediately in Demo Mode
 
-1. Start the backend with `python main.py`
-2. Start the frontend with `npm run dev`
-3. Open `http://localhost:4000`
-4. Click **Try Demo Scan**
-5. Open a repeat-player card and save a watch note
+1. Leave `backend/config.yaml.example` as-is, or set `HIBS_DEMO_MODE=1`
+2. Start the backend with `npm run demo:backend` or `cd backend && HIBS_DEMO_MODE=1 python main.py`
+3. Start the frontend with `npm run dev`
+4. Open `http://localhost:4000`
+5. Click **Try Demo Scan**
+6. Open a repeat-player card and save a watch note
 
-This path works without a live League client and without a real Riot API key.
+This path works without a live League client and without a real Riot API key. For one-command local demo startup, use `npm run demo`.
 
 ### 4. Get a Riot API Key
 
@@ -218,7 +219,7 @@ The backend handles two types of Riot API routing:
 
 ```bash
 cd backend && python -m pytest -q
-npm run build
+npm run verify
 ```
 
 ## Credits

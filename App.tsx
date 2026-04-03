@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import LobbyTracker from './components/LobbyTracker';
+import MemoryCenter from './components/MemoryCenter';
 import RepeatPlayerBoard from './components/RepeatPlayerBoard';
 import RepeatPlayerDetail from './components/RepeatPlayerDetail';
 import SnipeHistory from './components/SnipeHistory';
@@ -10,7 +11,7 @@ import {
   mapRepeatPlayersToSnipedPlayers,
   mapScanCurrentGameToCurrentGame,
 } from './services/riotService';
-import { CurrentGame, LiveClientStatus, Region, RepeatPlayer } from './types';
+import { CurrentGame, LiveClientStatus, MemorySummary, Region, RepeatPlayer } from './types';
 
 const LIVE_CLIENT_POLL_INTERVAL_MS = 5000;
 const DISCONNECTED_LIVE_CLIENT_STATUS: LiveClientStatus = {
@@ -94,9 +95,12 @@ const App: React.FC = () => {
   const [repeatPlayers, setRepeatPlayers] = useState<RepeatPlayer[]>([]);
   const [selectedRepeatPlayer, setSelectedRepeatPlayer] = useState<RepeatPlayer | null>(null);
   const [searchedUser, setSearchedUser] = useState<{ name: string; tag: string } | null>(null);
+  const [trackedProfileId, setTrackedProfileId] = useState<number | null>(null);
   const [liveClientStatus, setLiveClientStatus] = useState<LiveClientStatus>(DISCONNECTED_LIVE_CLIENT_STATUS);
   const [lastAutoScanFingerprint, setLastAutoScanFingerprint] = useState<string | null>(null);
-  const [lastScanSource, setLastScanSource] = useState<'manual' | 'auto' | null>(null);
+  const [lastScanSource, setLastScanSource] = useState<'manual' | 'auto' | 'demo' | null>(null);
+  const [memorySummary, setMemorySummary] = useState<MemorySummary | null>(null);
+  const [memoryLoading, setMemoryLoading] = useState(false);
 
   const snipedPlayers = useMemo(
     () => mapRepeatPlayersToSnipedPlayers(repeatPlayers),
@@ -107,6 +111,18 @@ const App: React.FC = () => {
     () => getLiveClientBanner(liveClientStatus, lastAutoScanFingerprint, loading),
     [lastAutoScanFingerprint, liveClientStatus, loading],
   );
+
+  const loadMemorySummary = useCallback(async () => {
+    setMemoryLoading(true);
+    try {
+      const summary = await RiotService.getMemorySummary();
+      setMemorySummary(summary);
+    } catch (memoryError) {
+      console.error('Error loading memory summary:', memoryError);
+    } finally {
+      setMemoryLoading(false);
+    }
+  }, []);
 
   const runScan = useCallback(async (
     name: string,
@@ -136,7 +152,9 @@ const App: React.FC = () => {
 
       setCurrentGame(mapScanCurrentGameToCurrentGame(scan.currentGame));
       setRepeatPlayers(scan.repeatPlayers);
+      setTrackedProfileId(scan.trackedProfile.id);
       setLastScanSource(source);
+      void loadMemorySummary();
       return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred while communicating with the Riot API.');
@@ -145,7 +163,50 @@ const App: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [loadMemorySummary]);
+
+  const handleDemo = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    setSelectedRepeatPlayer(null);
+
+    try {
+      const scan = await RiotService.runDemoScan();
+      setCurrentGame(mapScanCurrentGameToCurrentGame(scan.currentGame!));
+      setRepeatPlayers(scan.repeatPlayers);
+      setTrackedProfileId(scan.trackedProfile.id);
+      setSearchedUser({
+        name: scan.trackedProfile.gameName,
+        tag: scan.trackedProfile.tagLine,
+      });
+      setLastScanSource('demo');
+      await loadMemorySummary();
+    } catch (demoError) {
+      setError(demoError instanceof Error ? demoError.message : 'Failed to run demo mode.');
+    } finally {
+      setLoading(false);
+    }
+  }, [loadMemorySummary]);
+
+  const handleSaveWatchNote = useCallback(async (playerPuuid: string, note: string) => {
+    if (!trackedProfileId) {
+      throw new Error('No tracked profile is loaded yet.');
+    }
+
+    const savedNote = await RiotService.saveWatchNote(trackedProfileId, playerPuuid, note);
+
+    setRepeatPlayers((existingPlayers) => existingPlayers.map((player) => (
+      player.puuid === playerPuuid
+        ? { ...player, watchNote: savedNote || null }
+        : player
+    )));
+    setSelectedRepeatPlayer((existingPlayer) => (
+      existingPlayer && existingPlayer.puuid === playerPuuid
+        ? { ...existingPlayer, watchNote: savedNote || null }
+        : existingPlayer
+    ));
+    await loadMemorySummary();
+  }, [loadMemorySummary, trackedProfileId]);
 
   const handleSearch = async (name: string, tag: string, region: Region) => {
     const didScan = await runScan(name, tag, region, { clearExisting: true, source: 'manual' });
@@ -160,6 +221,10 @@ const App: React.FC = () => {
       setLastAutoScanFingerprint(liveClientStatus.sessionFingerprint);
     }
   };
+
+  useEffect(() => {
+    void loadMemorySummary();
+  }, [loadMemorySummary]);
 
   useEffect(() => {
     let cancelled = false;
@@ -233,7 +298,7 @@ const App: React.FC = () => {
         <div className="absolute top-0 right-0 -z-10 w-[500px] h-[500px] bg-indigo-600/10 blur-[120px] rounded-full"></div>
         <div className="absolute top-40 left-0 -z-10 w-[400px] h-[400px] bg-pink-600/5 blur-[100px] rounded-full"></div>
 
-        <Hero onSearch={handleSearch} isLoading={loading} />
+        <Hero onSearch={handleSearch} onTryDemo={() => void handleDemo()} isLoading={loading} />
 
         <div className="px-4 mb-8">
           <div className="mx-auto max-w-4xl rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4 backdrop-blur-sm">
@@ -269,6 +334,12 @@ const App: React.FC = () => {
 
         {!error && currentGame && (
           <div className="px-4">
+            {lastScanSource === 'demo' && (
+              <div className="max-w-3xl mx-auto mb-6 rounded-2xl border border-indigo-500/30 bg-indigo-500/10 p-4 text-sm leading-relaxed text-indigo-200">
+                You are viewing demo data generated locally so you can test the full product flow without
+                a real Riot API key or live lobby.
+              </div>
+            )}
             <div className="max-w-2xl mx-auto bg-zinc-900/80 border border-zinc-800 p-4 rounded-2xl flex items-center justify-between mb-8 backdrop-blur-sm">
               <div className="flex items-center gap-4">
                 <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
@@ -299,6 +370,8 @@ const App: React.FC = () => {
             />
           </div>
         )}
+
+        <MemoryCenter summary={memorySummary} loading={memoryLoading} />
 
         {!currentGame && !error && !loading && (
           <div className="grid md:grid-cols-3 gap-6 px-4 max-w-5xl mx-auto mt-12">
@@ -350,7 +423,9 @@ const App: React.FC = () => {
 
       <RepeatPlayerDetail
         player={selectedRepeatPlayer}
+        trackedProfileId={trackedProfileId}
         onClose={() => setSelectedRepeatPlayer(null)}
+        onSaveWatchNote={handleSaveWatchNote}
       />
     </div>
   );

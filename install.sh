@@ -92,7 +92,12 @@ install_deps() {
     fi
 
     if [ ! -f .env.local ]; then
-        printf 'VITE_API_URL=http://localhost:5000\n' > .env.local
+        if [ -f .env.local.example ]; then
+            cp .env.local.example .env.local
+        else
+            printf 'VITE_API_URL=http://localhost:5000\n' > .env.local
+        fi
+        success "Created .env.local from example"
     fi
 
     if grep -q '"build"' package.json 2>/dev/null; then
@@ -116,6 +121,7 @@ print_done() {
     echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
     echo -e "  ${BOLD}Location:${NC}  $INSTALL_DIR"
+    echo -e "  ${BOLD}Demo:${NC}      cd $INSTALL_DIR && $PKG_MGR run demo"
     echo -e "  ${BOLD}Backend:${NC}   cd $INSTALL_DIR/backend && python3 main.py"
     echo -e "  ${BOLD}Frontend:${NC}  cd $INSTALL_DIR && $PKG_MGR run dev"
     echo -e "  ${BOLD}Tip:${NC}       Demo mode works even before you add a real Riot API key"

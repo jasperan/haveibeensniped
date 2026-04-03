@@ -45,7 +45,7 @@ def create_app(config: dict, riot_client=None, storage=None, scan_service=None, 
     CORS(
         app,
         origins=app.config.get("CORS_ORIGINS", DEFAULT_CORS_ORIGINS),
-        methods=["GET", "POST", "OPTIONS"],
+        methods=["GET", "POST", "PUT", "OPTIONS"],
         allow_headers=["Content-Type", "Authorization"],
         supports_credentials=True,
     )
@@ -63,6 +63,9 @@ def create_app(config: dict, riot_client=None, storage=None, scan_service=None, 
         if not game_name or not tag_line or not region:
             return jsonify({"error": "Missing gameName, tagLine, or region"}), 400
 
+        if not app.config.get("DEMO_MODE") and app.extensions.get("riot_client") is None:
+            return jsonify({"error": "Riot API is not configured"}), 503
+
         try:
             result = app.extensions["scan_service"].run_manual_scan(
                 game_name,
@@ -76,6 +79,35 @@ def create_app(config: dict, riot_client=None, storage=None, scan_service=None, 
             return jsonify({"error": "Internal server error"}), 500
 
         return jsonify(result), 200
+
+    @app.route("/api/demo/scan", methods=["POST"])
+    def demo_scan():
+        if not app.config.get("DEMO_MODE"):
+            return jsonify({"error": "Demo mode is disabled"}), 404
+
+        try:
+            result = app.extensions["scan_service"].run_manual_scan(
+                "Streamer",
+                "NA1",
+                "NA1",
+                source="demo",
+            )
+        except Exception:
+            app.logger.exception("Demo scan failed")
+            return jsonify({"error": "Internal server error"}), 500
+
+        return jsonify(result), 200
+
+    @app.route("/api/status", methods=["GET"])
+    def app_status():
+        api_key = app.config.get("RIOT_API_KEY")
+        api_configured = bool(api_key and api_key != "RGAPI-YOUR-API-KEY-HERE")
+        return jsonify({
+            "status": "running",
+            "demoMode": bool(app.config.get("DEMO_MODE")),
+            "apiConfigured": api_configured,
+            "port": app.config.get("PORT", 5000),
+        }), 200
 
     @app.route("/api/live-client/status", methods=["GET"])
     def live_client_status():
@@ -120,12 +152,55 @@ def create_app(config: dict, riot_client=None, storage=None, scan_service=None, 
             ),
         }), 200
 
+    @app.route("/api/tracked-profiles/<int:tracked_profile_id>/memory", methods=["GET"])
+    def tracked_profile_memory(tracked_profile_id: int):
+        storage = app.extensions.get("storage")
+        if storage is None:
+            return jsonify({"error": "Storage unavailable"}), 500
+
+        overview = storage.load_memory_overview(tracked_profile_id)
+        if overview is None:
+            return jsonify({"error": "Tracked profile not found"}), 404
+
+        return jsonify(overview), 200
+
+    @app.route("/api/memory/summary", methods=["GET"])
+    def memory_summary():
+        storage = app.extensions.get("storage")
+        if storage is None:
+            return jsonify({"error": "Storage unavailable"}), 500
+        return jsonify(storage.get_memory_summary()), 200
+
+    @app.route("/api/tracked-profiles/<int:tracked_profile_id>/players/<player_puuid>/note", methods=["PUT"])
+    def update_watch_note(tracked_profile_id: int, player_puuid: str):
+        storage = app.extensions.get("storage")
+        if storage is None:
+            return jsonify({"error": "Storage unavailable"}), 500
+
+        if storage.get_tracked_profile(tracked_profile_id) is None:
+            return jsonify({"error": "Tracked profile not found"}), 404
+        if storage.get_player(player_puuid) is None:
+            return jsonify({"error": "Player not found"}), 404
+
+        payload = request.get_json(silent=True)
+        note = None
+        if isinstance(payload, dict):
+            note = payload.get("note")
+
+        saved_note = storage.upsert_watch_note(tracked_profile_id, player_puuid, note)
+        return jsonify({
+            "trackedProfileId": tracked_profile_id,
+            "playerPuuid": player_puuid,
+            "note": saved_note,
+        }), 200
+
     @app.route("/", methods=["GET"])
     def root():
         return jsonify({
             "service": "Have I Been Sniped - Backend API",
             "status": "running",
             "version": "1.0.0",
+            "demoMode": bool(app.config.get("DEMO_MODE")),
             "endpoints": {
                 "health": {
                     "method": "GET",
@@ -133,6 +208,16 @@ def create_app(config: dict, riot_client=None, storage=None, scan_service=None, 
                     "description": "Health check endpoint",
                 },
                 "scan": SCAN_ENDPOINT,
+                "demo_scan": {
+                    "method": "POST",
+                    "path": "/api/demo/scan",
+                    "description": "Demo walkthrough scan endpoint",
+                },
+                "memory_summary": {
+                    "method": "GET",
+                    "path": "/api/memory/summary",
+                    "description": "Local memory summary endpoint",
+                },
             },
         }), 200
 

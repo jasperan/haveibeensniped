@@ -5,10 +5,11 @@ import { Region } from '../types';
 
 interface HeroProps {
   onSearch: (name: string, tag: string, region: Region) => void;
+  onTryDemo: () => void;
   isLoading: boolean;
 }
 
-const Hero: React.FC<HeroProps> = ({ onSearch, isLoading }) => {
+const Hero: React.FC<HeroProps> = ({ onSearch, onTryDemo, isLoading }) => {
   const [input, setInput] = useState('');
   const [region, setRegion] = useState<Region>('EUW1');
 
@@ -31,10 +32,10 @@ const Hero: React.FC<HeroProps> = ({ onSearch, isLoading }) => {
         <p className="text-zinc-400 text-lg mb-10 max-w-xl mx-auto">
           Instantly check if you've coincided with any player in your current lobby during your last 100 matches.
         </p>
-        
+
         <form onSubmit={handleSubmit} className="relative max-w-2xl mx-auto">
           <div className="flex flex-col md:flex-row gap-2 bg-zinc-900 p-2 rounded-2xl border border-zinc-800 shadow-2xl">
-            <select 
+            <select
               value={region}
               onChange={(e) => setRegion(e.target.value as Region)}
               className="bg-zinc-800 text-white px-4 py-3 rounded-xl border border-zinc-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-medium"
@@ -43,7 +44,7 @@ const Hero: React.FC<HeroProps> = ({ onSearch, isLoading }) => {
                 <option key={r.value} value={r.value}>{r.label}</option>
               ))}
             </select>
-            <input 
+            <input
               type="text"
               placeholder="SummonerName#TAG"
               value={input}
@@ -51,20 +52,31 @@ const Hero: React.FC<HeroProps> = ({ onSearch, isLoading }) => {
               disabled={isLoading}
               className="flex-1 bg-transparent px-4 py-3 text-lg focus:outline-none placeholder:text-zinc-600 disabled:opacity-50"
             />
-            <button 
-              type="submit"
-              disabled={isLoading}
-              className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-zinc-700 text-white px-8 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 min-w-[140px]"
-            >
-              {isLoading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-              ) : (
-                <>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                  Search
-                </>
-              )}
-            </button>
+            <div className="flex flex-col gap-2 md:flex-row">
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-zinc-700 text-white px-8 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 min-w-[140px]"
+              >
+                {isLoading ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    Search
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                disabled={isLoading}
+                onClick={onTryDemo}
+                data-testid="try-demo-button"
+                className="border border-indigo-500/30 bg-indigo-500/10 px-6 py-3 rounded-xl font-bold text-indigo-200 transition-all hover:border-indigo-400/50 hover:bg-indigo-500/15 disabled:opacity-50"
+              >
+                Try Demo Scan
+              </button>
+            </div>
           </div>
         </form>
 

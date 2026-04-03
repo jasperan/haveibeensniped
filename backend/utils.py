@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import yaml
@@ -14,6 +15,7 @@ DEFAULT_RUNTIME_CONFIG = {
     "CACHE_ENABLED": True,
     "CACHE_TTL": 300,
     "RATE_LIMIT_PER_SECOND": 19,
+    "DEMO_MODE": False,
 }
 
 
@@ -38,6 +40,13 @@ REGION_TO_REGIONAL = {
 }
 
 
+def _env_flag(name: str) -> bool | None:
+    value = os.getenv(name)
+    if value is None:
+        return None
+    return value.strip().lower() in {'1', 'true', 'yes', 'on'}
+
+
 def load_runtime_config(config_path: str | Path | None = None) -> dict:
     """Load validated runtime configuration from config.yaml."""
     resolved_config_path = Path(config_path or Path(__file__).with_name("config.yaml"))
@@ -49,8 +58,13 @@ def load_runtime_config(config_path: str | Path | None = None) -> dict:
         print("Error: config.yaml not found. Please create it from config.yaml.example")
         raise SystemExit(1)
 
+    demo_mode = file_config.get("enable_demo_mode", DEFAULT_RUNTIME_CONFIG["DEMO_MODE"])
+    env_demo_mode = _env_flag("HIBS_DEMO_MODE")
+    if env_demo_mode is not None:
+        demo_mode = env_demo_mode
+
     api_key = file_config.get("riot_api_key")
-    if not api_key or api_key == "RGAPI-YOUR-API-KEY-HERE":
+    if not demo_mode and (not api_key or api_key == "RGAPI-YOUR-API-KEY-HERE"):  # pragma: allowlist secret
         print("Error: Please set a valid Riot API key in config.yaml")
         raise SystemExit(1)
 
@@ -75,6 +89,7 @@ def load_runtime_config(config_path: str | Path | None = None) -> dict:
             "rate_limit_per_second",
             DEFAULT_RUNTIME_CONFIG["RATE_LIMIT_PER_SECOND"],
         ),
+        "DEMO_MODE": bool(demo_mode),
     }
 
 

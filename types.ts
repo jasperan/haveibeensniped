@@ -94,6 +94,7 @@ export interface RepeatPlayer {
   wins: number;
   losses: number;
   risk: RepeatPlayerRiskSummary;
+  watchNote?: string | null;
 }
 
 export interface ScanCurrentGame {
@@ -108,6 +109,47 @@ export interface ScanResponse {
   scan: ScanSummary;
   currentGame: ScanCurrentGame | null;
   repeatPlayers: RepeatPlayer[];
+}
+
+export interface MemoryRepeatPlayerSummary {
+  trackedProfileId: number;
+  trackedProfileName: string;
+  puuid: string;
+  gameName: string;
+  tagLine: string;
+  region: string;
+  totalGames: number;
+  risk: RepeatPlayerRiskSummary;
+  watchNote?: string | null;
+}
+
+export interface MemoryRecentScan {
+  id: number;
+  source: string;
+  region: Region;
+  gameId: number | null;
+  queueType: string | null;
+  status: ScanStatus;
+  encounterCount: number;
+  createdAt: string;
+  trackedProfile: {
+    id: number;
+    gameName: string;
+    tagLine: string;
+  };
+}
+
+export interface MemorySummary {
+  stats: {
+    trackedProfileCount: number;
+    scanCount: number;
+    encounterCount: number;
+    repeatPlayerCount: number;
+    highAttentionCount: number;
+    watchNoteCount: number;
+  };
+  topRepeatPlayers: MemoryRepeatPlayerSummary[];
+  recentScans: MemoryRecentScan[];
 }
 
 export interface LiveClientPlayer {
@@ -126,4 +168,48 @@ export interface LiveClientStatus {
   sessionFingerprint: string | null;
   matchedProfile: TrackedProfile | null;
   canAutoScan: boolean;
+}
+
+export interface AppStatus {
+  status: string;
+  demoMode: boolean;
+  apiConfigured: boolean;
+  port: number;
+}
+
+export interface MemoryOverviewAggregate {
+  totalScans: number;
+  totalEncounters: number;
+  lastScanAt: string | null;
+  notedPlayers: number;
+}
+
+export interface MemoryOverviewRecentScan {
+  id: number;
+  source: string;
+  region: Region;
+  gameId: number | null;
+  queueType: string | null;
+  status: ScanStatus;
+  durationSeconds: number;
+  encounterCount: number;
+  createdAt: string;
+}
+
+export interface MemoryOverviewPlayerSummary {
+  puuid: string;
+  gameName: string;
+  tagLine: string;
+  region: Region;
+  totalGames: number;
+  risk: RepeatPlayerRiskSummary;
+  note?: string | null;
+  latestPlayedAt: string | null;
+}
+
+export interface MemoryOverview {
+  trackedProfile: TrackedProfile;
+  aggregate: MemoryOverviewAggregate;
+  recentScans: MemoryOverviewRecentScan[];
+  topRepeatPlayers: MemoryOverviewPlayerSummary[];
 }

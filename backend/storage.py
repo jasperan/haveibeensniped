@@ -8,6 +8,8 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Iterable
 
+from scoring import score_repeat_player
+
 
 SCHEMA_STATEMENTS: Iterable[str] = (
     """
@@ -248,6 +250,50 @@ class Storage:
             "region": row["region"],
         }
 
+    def get_tracked_profile(self, tracked_profile_id: int) -> dict | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                SELECT id, puuid, game_name, tag_line, region
+                FROM tracked_profiles
+                WHERE id = ?
+                """,
+                (tracked_profile_id,),
+            ).fetchone()
+
+        if row is None:
+            return None
+
+        return {
+            "id": int(row["id"]),
+            "puuid": row["puuid"],
+            "gameName": row["game_name"],
+            "tagLine": row["tag_line"],
+            "region": row["region"],
+        }
+
+    def get_player(self, player_puuid: str) -> dict | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                SELECT puuid, game_name, tag_line, region, resolution_status
+                FROM players
+                WHERE puuid = ?
+                """,
+                (player_puuid,),
+            ).fetchone()
+
+        if row is None:
+            return None
+
+        return {
+            "puuid": row["puuid"],
+            "gameName": row["game_name"],
+            "tagLine": row["tag_line"],
+            "region": row["region"],
+            "resolutionStatus": row["resolution_status"],
+        }
+
     def upsert_player(self, puuid, game_name, tag_line, region, resolution_status) -> int:
         with self._connect() as connection:
             connection.execute(
@@ -390,6 +436,81 @@ class Storage:
             match_id=match_id,
         )
 
+    def upsert_watch_note(self, tracked_profile_id: int, player_puuid: str, note: str | None) -> str | None:
+        normalized_note = (note or '').strip()
+
+        with self._connect() as connection:
+            if normalized_note:
+                connection.execute(
+                    """
+                    INSERT INTO watch_notes (tracked_profile_id, player_puuid, note)
+                    VALUES (?, ?, ?)
+                    ON CONFLICT(tracked_profile_id, player_puuid) DO UPDATE SET
+                        note = excluded.note,
+                        updated_at = CURRENT_TIMESTAMP
+                    """,
+                    (tracked_profile_id, player_puuid, normalized_note),
+                )
+            else:
+                connection.execute(
+                    """
+                    DELETE FROM watch_notes
+                    WHERE tracked_profile_id = ? AND player_puuid = ?
+                    """,
+                    (tracked_profile_id, player_puuid),
+                )
+
+        return normalized_note or None
+
+    def get_watch_note(self, tracked_profile_id: int, player_puuid: str) -> str | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                SELECT note
+                FROM watch_notes
+                WHERE tracked_profile_id = ? AND player_puuid = ?
+                """,
+                (tracked_profile_id, player_puuid),
+            ).fetchone()
+        return row["note"] if row is not None else None
+
+    def load_recent_scans(self, tracked_profile_id: int, limit: int = 5) -> list[dict]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT
+                    id,
+                    source,
+                    region,
+                    game_id,
+                    queue_type,
+                    status,
+                    duration_seconds,
+                    encounter_count,
+                    created_at
+                FROM scans
+                WHERE tracked_profile_id = ?
+                ORDER BY id DESC
+                LIMIT ?
+                """,
+                (tracked_profile_id, limit),
+            ).fetchall()
+
+        return [
+            {
+                "id": int(row["id"]),
+                "source": row["source"],
+                "region": row["region"],
+                "gameId": row["game_id"],
+                "queueType": row["queue_type"],
+                "status": row["status"],
+                "durationSeconds": row["duration_seconds"],
+                "encounterCount": row["encounter_count"],
+                "createdAt": row["created_at"],
+            }
+            for row in rows
+        ]
+
     def load_repeat_players(self, tracked_profile_id, player_puuids=None) -> list[dict]:
         if player_puuids is not None and not player_puuids:
             return []
@@ -456,6 +577,22 @@ class Storage:
                 scan_hit_params,
             ).fetchall()
 
+            note_filter = ""
+            note_params = [tracked_profile_id]
+            if player_puuids:
+                placeholders = ", ".join("?" for _ in player_puuids)
+                note_filter = f" AND player_puuid IN ({placeholders})"
+                note_params.extend(player_puuids)
+
+            note_rows = connection.execute(
+                f"""
+                SELECT player_puuid, note
+                FROM watch_notes
+                WHERE tracked_profile_id = ?{note_filter}
+                """,
+                note_params,
+            ).fetchall()
+
         players: dict[str, dict] = {}
         for row in encounter_rows:
             player = players.setdefault(
@@ -467,6 +604,7 @@ class Storage:
                     "region": row["region"],
                     "resolutionStatus": row["resolution_status"],
                     "encounters": [],
+                    "note": None,
                 },
             )
             player["encounters"].append(
@@ -483,6 +621,10 @@ class Storage:
         scan_hits = defaultdict(set)
         for row in hit_rows:
             scan_hits[row["player_puuid"]].add(int(row["scan_id"]))
+
+        notes = {row["player_puuid"]: row["note"] for row in note_rows}
+        for player in players.values():
+            player["note"] = notes.get(player["puuid"])
 
         repeat_players = []
         for player in players.values():
@@ -501,6 +643,159 @@ class Storage:
             )
         )
         return repeat_players
+
+    def load_memory_overview(self, tracked_profile_id: int, repeat_player_limit: int = 5) -> dict | None:
+        tracked_profile = self.get_tracked_profile(tracked_profile_id)
+        if tracked_profile is None:
+            return None
+
+        with self._connect() as connection:
+            aggregate_row = connection.execute(
+                """
+                SELECT
+                    COUNT(*) AS total_scans,
+                    COALESCE(SUM(encounter_count), 0) AS total_encounters,
+                    MAX(created_at) AS last_scan_at
+                FROM scans
+                WHERE tracked_profile_id = ?
+                """,
+                (tracked_profile_id,),
+            ).fetchone()
+            note_count_row = connection.execute(
+                """
+                SELECT COUNT(*) AS note_count
+                FROM watch_notes
+                WHERE tracked_profile_id = ?
+                """,
+                (tracked_profile_id,),
+            ).fetchone()
+
+        repeat_players = self.load_repeat_players(tracked_profile_id)[:repeat_player_limit]
+
+        top_repeat_players = [
+            {
+                "puuid": player["puuid"],
+                "gameName": player["gameName"],
+                "tagLine": player["tagLine"],
+                "region": player["region"],
+                "totalGames": player["stats"]["total_encounters"],
+                "risk": score_repeat_player(player["stats"]),
+                "note": player.get("note"),
+                "watchNote": player.get("note"),
+                "latestPlayedAt": player["encounters"][0]["playedAt"] if player["encounters"] else None,
+            }
+            for player in repeat_players
+        ]
+
+        return {
+            "trackedProfile": tracked_profile,
+            "aggregate": {
+                "totalScans": int(aggregate_row["total_scans"] or 0),
+                "totalEncounters": int(aggregate_row["total_encounters"] or 0),
+                "lastScanAt": aggregate_row["last_scan_at"],
+                "notedPlayers": int(note_count_row["note_count"] or 0),
+            },
+            "recentScans": self.load_recent_scans(tracked_profile_id),
+            "topRepeatPlayers": top_repeat_players,
+        }
+
+    def get_memory_summary(self) -> dict:
+        with self._connect() as connection:
+            tracked_profile_rows = connection.execute(
+                """
+                SELECT id, game_name, tag_line
+                FROM tracked_profiles
+                ORDER BY updated_at DESC, id DESC
+                """
+            ).fetchall()
+            aggregate_row = connection.execute(
+                """
+                SELECT
+                    COUNT(*) AS scan_count,
+                    COALESCE(SUM(encounter_count), 0) AS encounter_count
+                FROM scans
+                """
+            ).fetchone()
+            note_count_row = connection.execute(
+                """
+                SELECT COUNT(*) AS note_count
+                FROM watch_notes
+                """
+            ).fetchone()
+            recent_scan_rows = connection.execute(
+                """
+                SELECT
+                    s.id,
+                    s.source,
+                    s.region,
+                    s.game_id,
+                    s.queue_type,
+                    s.status,
+                    s.encounter_count,
+                    s.created_at,
+                    tp.id AS tracked_profile_id,
+                    tp.game_name,
+                    tp.tag_line
+                FROM scans s
+                JOIN tracked_profiles tp ON tp.id = s.tracked_profile_id
+                ORDER BY s.id DESC
+                LIMIT 6
+                """
+            ).fetchall()
+
+        combined_repeat_players = []
+        for row in tracked_profile_rows:
+            tracked_profile_id = int(row["id"])
+            tracked_profile_name = f"{row['game_name']}#{row['tag_line']}"
+            for player in self.load_repeat_players(tracked_profile_id):
+                combined_repeat_players.append(
+                    {
+                        "trackedProfileId": tracked_profile_id,
+                        "trackedProfileName": tracked_profile_name,
+                        "puuid": player["puuid"],
+                        "gameName": player["gameName"],
+                        "tagLine": player["tagLine"],
+                        "region": player["region"],
+                        "totalGames": player["stats"]["total_encounters"],
+                        "risk": score_repeat_player(player["stats"]),
+                        "note": player.get("note"),
+                        "watchNote": player.get("note"),
+                    }
+                )
+
+        combined_repeat_players.sort(
+            key=lambda player: (-player["risk"]["score"], -player["totalGames"], player["gameName"].lower())
+        )
+
+        return {
+            "stats": {
+                "trackedProfileCount": len(tracked_profile_rows),
+                "scanCount": int(aggregate_row["scan_count"] or 0),
+                "encounterCount": int(aggregate_row["encounter_count"] or 0),
+                "repeatPlayerCount": len(combined_repeat_players),
+                "highAttentionCount": sum(1 for player in combined_repeat_players if player["risk"]["tier"] == "high-attention"),
+                "watchNoteCount": int(note_count_row["note_count"] or 0),
+            },
+            "topRepeatPlayers": combined_repeat_players[:6],
+            "recentScans": [
+                {
+                    "id": int(row["id"]),
+                    "source": row["source"],
+                    "region": row["region"],
+                    "gameId": row["game_id"],
+                    "queueType": row["queue_type"],
+                    "status": row["status"],
+                    "encounterCount": row["encounter_count"],
+                    "createdAt": row["created_at"],
+                    "trackedProfile": {
+                        "id": int(row["tracked_profile_id"]),
+                        "gameName": row["game_name"],
+                        "tagLine": row["tag_line"],
+                    },
+                }
+                for row in recent_scan_rows
+            ],
+        }
 
     def count_encounters(self) -> int:
         with self._connect() as connection:

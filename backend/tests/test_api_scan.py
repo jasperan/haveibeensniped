@@ -31,7 +31,7 @@ class FakeScanService:
 def build_app(tmp_path, scan_service):
     return create_app({
         "TESTING": True,
-        "RIOT_API_KEY": "test-key",
+        "RIOT_API_KEY": "test-key",  # pragma: allowlist secret
         "DATABASE_PATH": str(tmp_path / "test.db"),
         "CORS_ORIGINS": ["http://localhost:4000"],
     }, riot_client=object(), storage=object(), scan_service=scan_service)
@@ -90,3 +90,21 @@ def test_scan_endpoint_returns_internal_server_error_on_unexpected_errors(tmp_pa
 
     assert response.status_code == 500
     assert response.get_json()["error"] == "Internal server error"
+
+
+def test_scan_endpoint_requires_configured_riot_client(tmp_path):
+    app = create_app({
+        "TESTING": True,
+        "RIOT_API_KEY": None,
+        "DATABASE_PATH": str(tmp_path / "test.db"),
+        "CORS_ORIGINS": ["http://localhost:4000"],
+    }, riot_client=None, storage=object(), scan_service=FakeScanService())
+
+    response = app.test_client().post("/api/scan", json={
+        "gameName": "Streamer",
+        "tagLine": "NA1",
+        "region": "NA1",
+    })
+
+    assert response.status_code == 503
+    assert "Riot API is not configured" in response.get_json()["error"]

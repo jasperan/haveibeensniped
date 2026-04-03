@@ -15,7 +15,7 @@ class ScanService:
         self.storage = storage
         self.riot_client = riot_client
 
-    def run_manual_scan(self, game_name, tag_line, region):
+    def run_manual_scan(self, game_name, tag_line, region, *, source="manual", match_count=100):
         tracked_puuid = self.riot_client.get_puuid_by_riot_id(game_name, tag_line, region)
         if not tracked_puuid:
             raise ValueError("Player not found")
@@ -38,6 +38,7 @@ class ScanService:
         if not active_game:
             scan = self._insert_scan(
                 tracked_profile_id=tracked_profile_id,
+                source=source,
                 region=region,
                 game_id=None,
                 queue_type=None,
@@ -63,7 +64,7 @@ class ScanService:
             tracked_puuid,
             lobby_puuids,
             region,
-            match_count=100,
+            match_count=match_count,
         )
         encounter_count = sum(
             len(player_history.get("matches", [])) for player_history in history.values()
@@ -71,6 +72,7 @@ class ScanService:
 
         scan = self._insert_scan(
             tracked_profile_id=tracked_profile_id,
+            source=source,
             region=region,
             game_id=active_game.get("gameId"),
             queue_type=active_game.get("gameMode"),
@@ -105,6 +107,7 @@ class ScanService:
     def _insert_scan(
         self,
         tracked_profile_id,
+        source,
         region,
         game_id,
         queue_type,
@@ -113,7 +116,7 @@ class ScanService:
     ):
         scan_id = self.storage.insert_scan(
             tracked_profile_id=tracked_profile_id,
-            source="manual",
+            source=source,
             region=region,
             game_id=game_id,
             queue_type=queue_type,
@@ -124,7 +127,7 @@ class ScanService:
         return {
             "id": scan_id,
             "trackedProfileId": tracked_profile_id,
-            "source": "manual",
+            "source": source,
             "region": region,
             "gameId": game_id,
             "queueType": queue_type,
@@ -255,34 +258,22 @@ class ScanService:
                     "wins": wins,
                     "losses": total_games - wins,
                     "risk": score_repeat_player(player["stats"]),
+                    "note": player.get("note"),
+                    "watchNote": player.get("note"),
                 }
             )
 
-        repeat_players.sort(
-            key=lambda player: (
-                -player["risk"]["score"],
-                -player["totalGames"],
-                player["gameName"].lower(),
-                player["tagLine"].lower(),
-            )
+        return sorted(
+            repeat_players,
+            key=lambda player: (-player["risk"]["score"], -player["totalGames"]),
         )
-        return repeat_players
 
     @staticmethod
-    def _normalize_encounter_relation(team):
-        relation_map = {
-            "with": "ally",
-            "ally": "ally",
-            "against": "enemy",
-            "enemy": "enemy",
-        }
-        return relation_map.get(team, "unknown")
+    def _normalize_encounter_relation(team_value):
+        return "ally" if team_value == "with" else "enemy"
 
     @staticmethod
-    def _timestamp_to_iso(timestamp):
-        if timestamp is None:
-            return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-        return datetime.fromtimestamp(timestamp / 1000, tz=timezone.utc).isoformat().replace(
-            "+00:00",
-            "Z",
-        )
+    def _timestamp_to_iso(timestamp_ms):
+        if not timestamp_ms:
+            return datetime.now(timezone.utc).isoformat()
+        return datetime.fromtimestamp(timestamp_ms / 1000, tz=timezone.utc).isoformat()

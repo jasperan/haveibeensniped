@@ -1,10 +1,13 @@
 import React, { useEffect, useMemo } from 'react';
 import { CHAMPION_MAP, getChampIcon } from '../constants';
 import { RepeatPlayer, RiskTier } from '../types';
+import { useState } from 'react';
 
 interface RepeatPlayerDetailProps {
   player: RepeatPlayer | null;
+  trackedProfileId?: number | null;
   onClose: () => void;
+  onSaveWatchNote?: (playerPuuid: string, note: string) => Promise<void>;
 }
 
 const TIER_STYLES: Record<RiskTier, {
@@ -66,11 +69,19 @@ const formatMatchDate = (timestamp: number) => new Date(timestamp).toLocaleStrin
   minute: '2-digit',
 });
 
-const RepeatPlayerDetail: React.FC<RepeatPlayerDetailProps> = ({ player, onClose }) => {
+const RepeatPlayerDetail: React.FC<RepeatPlayerDetailProps> = ({
+  player,
+  trackedProfileId,
+  onClose,
+  onSaveWatchNote,
+}) => {
   const sortedMatches = useMemo(() => {
     if (!player) return [];
     return [...player.matches].sort((left, right) => right.timestamp - left.timestamp);
   }, [player]);
+  const [draftNote, setDraftNote] = useState('');
+  const [noteSaving, setNoteSaving] = useState(false);
+  const [noteError, setNoteError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!player) return undefined;
@@ -91,11 +102,32 @@ const RepeatPlayerDetail: React.FC<RepeatPlayerDetailProps> = ({ player, onClose
     };
   }, [player, onClose]);
 
+  useEffect(() => {
+    setDraftNote(player?.watchNote || '');
+    setNoteError(null);
+    setNoteSaving(false);
+  }, [player]);
+
   if (!player) return null;
 
   const tierStyle = TIER_STYLES[player.risk.tier];
   const relation = getRelationPresentation(player.relation);
   const olderMemoryCount = Math.max(player.totalGames - sortedMatches.length, 0);
+  const canSaveNote = Boolean(trackedProfileId && onSaveWatchNote);
+
+  const handleSaveNote = async () => {
+    if (!canSaveNote || !onSaveWatchNote) return;
+    setNoteSaving(true);
+    setNoteError(null);
+
+    try {
+      await onSaveWatchNote(player.puuid, draftNote);
+    } catch (error) {
+      setNoteError(error instanceof Error ? error.message : 'Failed to save note');
+    } finally {
+      setNoteSaving(false);
+    }
+  };
 
   return (
     <div
@@ -204,6 +236,44 @@ const RepeatPlayerDetail: React.FC<RepeatPlayerDetailProps> = ({ player, onClose
                       </li>
                     ))}
                   </ul>
+                </section>
+
+                <section className="rounded-3xl border border-zinc-800 bg-zinc-950/40 p-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <h4 className="text-sm font-black uppercase tracking-[0.2em] text-zinc-400">Watch note</h4>
+                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                      Local only
+                    </span>
+                  </div>
+                  <p className="mt-3 text-sm leading-relaxed text-zinc-500">
+                    Save your own context for this repeat player. Notes persist in local SQLite memory.
+                  </p>
+                  <textarea
+                    data-testid="watch-note-textarea"
+                    value={draftNote}
+                    onChange={(event) => setDraftNote(event.target.value)}
+                    placeholder="Example: shows up in back-to-back queue windows"
+                    className="mt-4 min-h-28 w-full rounded-2xl border border-zinc-800 bg-zinc-950/70 px-4 py-3 text-sm text-zinc-200 outline-none transition-colors placeholder:text-zinc-600 focus:border-indigo-500"
+                  />
+                  {noteError && (
+                    <div className="mt-3 text-sm text-rose-300">{noteError}</div>
+                  )}
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <button
+                      data-testid="save-watch-note"
+                      type="button"
+                      disabled={!canSaveNote || noteSaving}
+                      onClick={() => void handleSaveNote()}
+                      className="rounded-full border border-indigo-500/30 bg-indigo-500/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-indigo-200 transition-colors hover:border-indigo-400/50 hover:bg-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {noteSaving ? 'Saving…' : draftNote.trim() ? 'Save note' : 'Clear note'}
+                    </button>
+                    {!canSaveNote && (
+                      <span className="text-xs text-zinc-500">
+                        Run a scan or demo first to save notes.
+                      </span>
+                    )}
+                  </div>
                 </section>
 
                 <section className="rounded-3xl border border-zinc-800 bg-zinc-950/40 p-5">

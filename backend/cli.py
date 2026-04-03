@@ -12,6 +12,7 @@ from typing import Dict, Optional
 # Ensure backend directory is in path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
+from demo_data import DemoRiotClient
 from riot_client import RiotAPIClient
 from rich.console import Console
 from rich.table import Table
@@ -45,32 +46,38 @@ def save_memory(memory: Dict):
         json.dump(memory, f)
 
 def get_riot_client(config: Dict) -> Optional[RiotAPIClient]:
+    if config.get('enable_demo_mode') or os.getenv('HIBS_DEMO_MODE', '').lower() in {'1', 'true', 'yes', 'on'}:
+        return DemoRiotClient()
+
     api_key = config.get('riot_api_key')
-    if not api_key or api_key == 'RGAPI-YOUR-API-KEY-HERE':
+    if not api_key or api_key == 'RGAPI-YOUR-API-KEY-HERE':  # pragma: allowlist secret
         return None
     return RiotAPIClient(api_key)
 
 def print_header():
     console.clear()
+    subtitle = "[dim]League of Legends Match Analyzer[/dim]"
+    if load_config().get('enable_demo_mode') or os.getenv('HIBS_DEMO_MODE', '').lower() in {'1', 'true', 'yes', 'on'}:
+        subtitle += "\n[bold magenta]Demo mode enabled[/bold magenta]"
     console.print(Panel.fit(
-        "[bold cyan]HAVE I BEEN SNIPED?[/bold cyan]\n[dim]League of Legends Match Analyzer[/dim]",
+        f"[bold cyan]HAVE I BEEN SNIPED?[/bold cyan]\n{subtitle}",
         border_style="cyan"
     ))
 
 def manage_config():
     print_header()
     console.print("[bold yellow]Configuration Management[/bold yellow]\n")
-    
+
     config = load_config()
     current_key = config.get('riot_api_key', 'Not Set')
-    
+
     if current_key != 'Not Set' and len(current_key) > 8:
         masked_key = f"{current_key[:4]}...{current_key[-4:]}"
     else:
         masked_key = current_key
-        
+
     console.print(f"Current API Key: [cyan]{masked_key}[/cyan]")
-    
+
     if Confirm.ask("Do you want to update the API Key?"):
         new_key = Prompt.ask("Enter new Riot API Key")
         if new_key:
@@ -82,10 +89,10 @@ def manage_config():
 def check_integrity():
     print_header()
     console.print("[bold yellow]API Integrity Check[/bold yellow]\n")
-    
+
     config = load_config()
     client = get_riot_client(config)
-    
+
     if not client:
         console.print("[red]Error: API Key not configured.[/red]")
         Prompt.ask("Press Enter to continue")
@@ -96,17 +103,17 @@ def check_integrity():
     game_name = Prompt.ask("Enter a known Game Name", default="Riot")
     tag_line = Prompt.ask("Enter Tag Line", default="NA1") # Assuming a default/dummy
     region = Prompt.ask("Enter Region", default="NA1")
-    
+
     with Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
         transient=True
     ) as progress:
         task = progress.add_task("[cyan]Checking API connection...", total=1)
-        
+
         try:
             puuid = client.get_puuid_by_riot_id(game_name, tag_line, region)
-            
+
             if puuid:
                 console.print(f"[green]Success! API Key is valid.[/green]")
                 console.print(f"Resolved PUUID: {puuid[:10]}...")
@@ -114,14 +121,14 @@ def check_integrity():
                 console.print("[red]Failed: Could not resolve player. Key might be invalid or player not found.[/red]")
         except Exception as e:
              console.print(f"[red]Error during check: {e}[/red]")
-             
+
     Prompt.ask("\nPress Enter to continue")
 
 def query_user():
     print_header()
     config = load_config()
     client = get_riot_client(config)
-    
+
     if not client:
         console.print("[red]Error: API Key not configured. Go to Config first.[/red]")
         Prompt.ask("Press Enter to continue")
@@ -131,12 +138,12 @@ def query_user():
     last_name = memory.get('game_name', '')
     last_tag = memory.get('tag_line', '')
     last_region = memory.get('region', 'NA1')
-    
+
     console.print("[bold cyan]Enter Target Player[/bold cyan]")
     game_name = Prompt.ask("Game Name", default=last_name)
     tag_line = Prompt.ask("Tag Line", default=last_tag)
     region = Prompt.ask("Region", default=last_region)
-    
+
     # Update memory
     memory.update({
         'game_name': game_name,
@@ -144,7 +151,7 @@ def query_user():
         'region': region
     })
     save_memory(memory)
-    
+
     # Process
     try:
         with Progress(
@@ -152,40 +159,40 @@ def query_user():
             TextColumn("[progress.description]{task.description}"),
             transient=True
         ) as progress:
-            
+
             # Step 1: Get PUUID
             task = progress.add_task("[cyan]Fetching PUUID...", total=None)
             puuid = client.get_puuid_by_riot_id(game_name, tag_line, region)
-            
+
             if not puuid:
                 console.print("[red]Player not found![/red]")
                 Prompt.ask("Press Enter to continue")
                 return
-                
+
             # Step 2: Get Active Game
             progress.update(task, description="Checking for active game...")
             game_data = client.get_active_game(puuid, region)
-            
+
             if not game_data:
                 console.print("[yellow]Player is not currently in a live game.[/yellow]")
                 Prompt.ask("Press Enter to continue")
                 return
-            
+
             # Step 3: Analyze Participants
             progress.update(task, description="Analyzing participants (this may take a while)...")
-            
+
             participants = game_data.get('participants', [])
             lobby_puuids = [p['puuid'] for p in participants]
-            
+
             # Use backend logic structure directly or reuse client method
             # Reusing client method: analyze_match_history
             analysis = client.analyze_match_history(puuid, lobby_puuids, region, match_count=20) # Limit to 20 for speed in CLI
-            
+
             # Display Results
             console.clear()
             print_header()
             console.print(f"Active Game Found: [bold]{game_data.get('gameMode', 'UNKNOWN')}[/bold]")
-            
+
             if not analysis:
                 console.print("[green]No snipers found! (No recent shared matches)[/green]")
             else:
@@ -194,7 +201,7 @@ def query_user():
                 table.add_column("Games With", justify="right")
                 table.add_column("Win Rate", justify="right")
                 table.add_column("Last Played", style="dim")
-                
+
                 for p_puuid, data in analysis.items():
                     # Find participant name
                     p_info = next((x for x in participants if x['puuid'] == p_puuid), None)
@@ -205,7 +212,7 @@ def query_user():
                             name = riot_id
                         else:
                             name = p_info.get('summonerName', 'Unknown')
-                    
+
                     matches = data.get('matches', [])
                     last_played = "N/A"
                     if matches:
@@ -215,13 +222,13 @@ def query_user():
                     wins = data['wins']
                     total = data['totalGames']
                     wr = int((wins/total)*100)
-                    
+
                     table.add_row(name, str(total), f"{wr}%", last_played)
-                
+
                 console.print(table)
-            
+
             Prompt.ask("\nPress Enter to return to menu")
-            
+
     except Exception as e:
         console.print(f"[red]An error occurred: {e}[/red]")
         Prompt.ask("Press Enter to continue")
@@ -230,7 +237,7 @@ def query_user():
 def main_menu():
     while True:
         print_header()
-        
+
         choices = [
             questionary.Choice("Query User (Active Game & Snipes)", value="1"),
             questionary.Choice("Manage Configuration (API Key)", value="2"),
@@ -238,13 +245,13 @@ def main_menu():
             questionary.Separator(),
             questionary.Choice("Exit", value="0")
         ]
-        
+
         choice = questionary.select(
             "Select a Task:",
             choices=choices,
             use_arrow_keys=True
         ).ask()
-        
+
         if not choice or choice == "0":
             console.print("[yellow]Goodbye![/yellow]")
             break
