@@ -318,13 +318,13 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen league-gradient selection:bg-indigo-500 selection:text-white flex flex-col">
+    <div className="min-h-screen league-gradient flex flex-col">
       <Navbar />
 
       <main className="max-w-7xl mx-auto pb-24 relative flex-grow">
-        {/* Background Decorations */}
-        <div className="absolute top-0 right-0 -z-10 w-[500px] h-[500px] bg-indigo-600/10 blur-[120px] rounded-full"></div>
-        <div className="absolute top-40 left-0 -z-10 w-[400px] h-[400px] bg-pink-600/5 blur-[100px] rounded-full"></div>
+        {/* Background decorations — single-hue indigo */}
+        <div className="absolute top-0 right-0 -z-10 w-[500px] h-[500px] bg-indigo-600/8 blur-[140px] rounded-full"></div>
+        <div className="absolute top-60 left-0 -z-10 w-[350px] h-[350px] bg-indigo-800/6 blur-[120px] rounded-full"></div>
 
         <Hero onSearch={handleSearch} onTryDemo={() => void handleDemo()} isLoading={loading} />
 
@@ -334,11 +334,11 @@ const App: React.FC = () => {
               <div className={`mt-1.5 h-3 w-3 rounded-full ${liveClientBanner.accentClassName}`}></div>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-3">
-                  <span className={`rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${liveClientBanner.badgeClassName}`}>
+                  <span className={`rounded-full border px-3 py-1 text-2xs font-bold uppercase tracking-[0.2em] ${liveClientBanner.badgeClassName}`}>
                     Live Client
                   </span>
                   {liveClientStatus.activePlayer?.riotId && (
-                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                    <span className="text-2xs font-bold uppercase tracking-[0.2em] text-zinc-500">
                       {liveClientStatus.activePlayer.riotId}
                     </span>
                   )}
@@ -402,48 +402,56 @@ const App: React.FC = () => {
         <MemoryCenter summary={memorySummary} loading={memoryLoading} />
 
         {!currentGame && !error && !loading && (
-          <div className="grid md:grid-cols-3 gap-6 px-4 max-w-5xl mx-auto mt-12">
-            <div className="glass-card p-8 rounded-3xl border-zinc-800/50 hover:border-zinc-700 transition-colors group">
-              <div className="w-12 h-12 bg-indigo-600/20 rounded-2xl flex items-center justify-center mb-6 text-indigo-500 group-hover:scale-110 transition-transform">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+          <div className="px-4 max-w-4xl mx-auto mt-16 space-y-4">
+            {[
+              {
+                icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />,
+                title: 'Loading screen check',
+                desc: 'Scan your lobby while the game loads. No waiting for match history to update.',
+              },
+              {
+                icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />,
+                title: '100-match depth',
+                desc: 'Cross-references every lobby participant against your last 100 games.',
+              },
+              {
+                icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />,
+                title: 'Risk scoring',
+                desc: 'Tracks win/loss records, repeat frequency, and flags suspicious patterns automatically.',
+              },
+            ].map((feature) => (
+              <div key={feature.title} className="glass-card rounded-2xl border-zinc-800/40 p-5 flex items-start gap-5 transition-colors hover:border-zinc-700/60 group">
+                <div className="w-10 h-10 shrink-0 bg-indigo-600/15 rounded-xl flex items-center justify-center text-indigo-400 group-hover:bg-indigo-600/25 transition-colors">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">{feature.icon}</svg>
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-zinc-100">{feature.title}</h3>
+                  <p className="mt-1 text-sm text-zinc-500 leading-relaxed">{feature.desc}</p>
+                </div>
               </div>
-              <h3 className="text-xl font-bold mb-3">Instant Check</h3>
-              <p className="text-zinc-500 text-sm leading-relaxed">No need to wait for match history to update. Check your lobby while in the loading screen.</p>
-            </div>
-            <div className="glass-card p-8 rounded-3xl border-zinc-800/50 hover:border-zinc-700 transition-colors group">
-              <div className="w-12 h-12 bg-purple-600/20 rounded-2xl flex items-center justify-center mb-6 text-purple-500 group-hover:scale-110 transition-transform">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2-2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-              </div>
-              <h3 className="text-xl font-bold mb-3">100 Match Deep Scan</h3>
-              <p className="text-zinc-500 text-sm leading-relaxed">We scan the last 100 matches to find any overlap with your current 9 lobby participants.</p>
-            </div>
-            <div className="glass-card p-8 rounded-3xl border-zinc-800/50 hover:border-zinc-700 transition-colors group">
-              <div className="w-12 h-12 bg-pink-600/20 rounded-2xl flex items-center justify-center mb-6 text-pink-500 group-hover:scale-110 transition-transform">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-              </div>
-              <h3 className="text-xl font-bold mb-3">Win/Loss Tracking</h3>
-              <p className="text-zinc-500 text-sm leading-relaxed">See if that teammate you recognize is actually a win-streak partner or a game-thrower.</p>
-            </div>
+            ))}
           </div>
         )}
       </main>
 
-      <footer className="py-12 px-4 border-t border-zinc-900 bg-zinc-950/80">
-        <div className="max-w-7xl mx-auto space-y-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+      <footer className="py-10 px-4 border-t border-zinc-800/40">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-zinc-800 rounded flex items-center justify-center">
-                <div className="w-3 h-3 bg-zinc-400 rounded-sm rotate-45"></div>
+              <div className="w-5 h-5 bg-zinc-800 rounded flex items-center justify-center">
+                <div className="w-2.5 h-2.5 bg-zinc-500 rounded-sm rotate-45"></div>
               </div>
-              <span className="font-bold text-zinc-400 tracking-tight">HAVEIBEEN<span className="text-zinc-600">SNIPED</span></span>
+              <span className="font-semibold text-sm text-zinc-500 tracking-tight">
+                HAVEIBEEN<span className="text-zinc-600">SNIPED</span>
+              </span>
             </div>
             <div className="flex flex-col items-center md:items-end gap-2">
-              <div className="text-zinc-400 text-sm font-medium">
-                created by <span className="text-indigo-400">jasperan</span>
+              <div className="text-zinc-500 text-sm">
+                Built by <a href="https://github.com/jasperan" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300 transition-colors">jasperan</a>
               </div>
-              <div className="text-zinc-600 text-[10px] max-w-md text-center md:text-right uppercase tracking-[0.2em] font-bold">
-                HaveIBeenSniped isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing League of Legends.
-              </div>
+              <p className="text-zinc-600 text-2xs max-w-md text-center md:text-right font-medium">
+                Not endorsed by Riot Games. Doesn't reflect the views of Riot Games or anyone involved in producing League of Legends.
+              </p>
             </div>
           </div>
         </div>

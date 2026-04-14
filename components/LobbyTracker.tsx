@@ -28,7 +28,7 @@ const PlayerCard: React.FC<PlayerCardProps> = ({ player, snipe, isUser }) => {
         <div className="relative">
           <img src={getChampIcon(player.championId)} alt="champ" className="w-12 h-12 rounded-lg border border-zinc-700" />
           {snipe && (
-            <div className="absolute -top-2 -right-2 bg-indigo-500 text-[10px] font-bold px-1.5 py-0.5 rounded-md uppercase tracking-tighter">
+            <div className="absolute -top-2 -right-2 bg-indigo-500 text-2xs font-bold px-1.5 py-0.5 rounded-md uppercase tracking-tighter">
               Sniped
             </div>
           )}

@@ -10,8 +10,16 @@ const MemoryCenter: React.FC<MemoryCenterProps> = ({ summary, loading }) => {
   if (loading && !summary) {
     return (
       <section data-testid="memory-center" className="mt-16 px-4">
-        <div className="mx-auto max-w-6xl rounded-3xl border border-zinc-800 bg-zinc-950/60 p-8 text-sm text-zinc-500">
-          Loading local encounter memory…
+        <div className="mx-auto max-w-6xl space-y-6">
+          <div className="h-7 w-48 rounded-lg bg-zinc-800/60 animate-pulse"></div>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="glass-card rounded-3xl border border-zinc-800/70 p-5 space-y-3">
+                <div className="h-3 w-24 rounded bg-zinc-800/60 animate-pulse"></div>
+                <div className="h-8 w-16 rounded bg-zinc-800/40 animate-pulse"></div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
     );
@@ -57,7 +65,7 @@ const MemoryCenter: React.FC<MemoryCenterProps> = ({ summary, loading }) => {
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {statCards.map((card) => (
             <div key={card.label} className="glass-card rounded-3xl border border-zinc-800/70 p-5">
-              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+              <div className="text-2xs font-bold uppercase tracking-[0.2em] text-zinc-500">
                 {card.label}
               </div>
               <div className="mt-3 text-3xl font-black text-zinc-100">{card.value}</div>
@@ -86,19 +94,19 @@ const MemoryCenter: React.FC<MemoryCenterProps> = ({ summary, loading }) => {
                           {player.gameName}
                           <span className="ml-2 text-xs font-mono text-zinc-500">#{player.tagLine}</span>
                         </div>
-                        <div className="mt-2 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                        <div className="mt-2 text-2xs font-bold uppercase tracking-[0.2em] text-zinc-500">
                           tracked under {player.trackedProfileName}
                         </div>
                       </div>
                       <div className="text-right">
                         <div className="text-2xl font-black text-indigo-300">{player.risk.score}</div>
-                        <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                        <div className="text-2xs font-bold uppercase tracking-[0.2em] text-zinc-500">
                           {player.risk.tier}
                         </div>
                       </div>
                     </div>
 
-                    <div className="mt-4 flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-[0.2em]">
+                    <div className="mt-4 flex flex-wrap gap-2 text-2xs font-bold uppercase tracking-[0.2em]">
                       <span className="rounded-full border border-zinc-800 bg-zinc-900 px-2.5 py-1 text-zinc-400">
                         {player.totalGames} shared games
                       </span>
@@ -142,7 +150,7 @@ const MemoryCenter: React.FC<MemoryCenterProps> = ({ summary, loading }) => {
                           {scan.trackedProfile.gameName}
                           <span className="ml-2 text-xs font-mono text-zinc-500">#{scan.trackedProfile.tagLine}</span>
                         </div>
-                        <div className="mt-2 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                        <div className="mt-2 text-2xs font-bold uppercase tracking-[0.2em] text-zinc-500">
                           {scan.source} · {scan.region} · {scan.status}
                         </div>
                       </div>

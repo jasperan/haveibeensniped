@@ -157,7 +157,7 @@ const RepeatPlayerDetail: React.FC<RepeatPlayerDetailProps> = ({
                         #{player.tagLine}
                       </span>
                     </h3>
-                    <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${tierStyle.badgeClassName}`}>
+                    <span className={`inline-flex rounded-full px-3 py-1 text-2xs font-bold uppercase tracking-[0.2em] ${tierStyle.badgeClassName}`}>
                       {tierStyle.label}
                     </span>
                   </div>
@@ -197,25 +197,25 @@ const RepeatPlayerDetail: React.FC<RepeatPlayerDetailProps> = ({
           <div className="space-y-6 p-6 md:p-8">
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               <div className="rounded-3xl border border-zinc-800 bg-zinc-950/40 p-4">
-                <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Score</div>
+                <div className="text-2xs font-bold uppercase tracking-[0.2em] text-zinc-500">Score</div>
                 <div className="mt-3 text-3xl font-black text-zinc-100">{player.risk.score}</div>
                 <div className="mt-2 text-sm text-zinc-500">{tierStyle.label} tier</div>
               </div>
 
               <div className="rounded-3xl border border-zinc-800 bg-zinc-950/40 p-4">
-                <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Shared matches</div>
+                <div className="text-2xs font-bold uppercase tracking-[0.2em] text-zinc-500">Shared matches</div>
                 <div className="mt-3 text-3xl font-black text-zinc-100">{player.totalGames}</div>
                 <div className="mt-2 text-sm text-zinc-500">Saved in local encounter memory</div>
               </div>
 
               <div className="rounded-3xl border border-zinc-800 bg-zinc-950/40 p-4">
-                <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Record</div>
+                <div className="text-2xs font-bold uppercase tracking-[0.2em] text-zinc-500">Record</div>
                 <div className="mt-3 text-3xl font-black text-zinc-100">{player.wins}W / {player.losses}L</div>
                 <div className="mt-2 text-sm text-zinc-500">Across stored encounters</div>
               </div>
 
               <div className="rounded-3xl border border-zinc-800 bg-zinc-950/40 p-4">
-                <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Current relation</div>
+                <div className="text-2xs font-bold uppercase tracking-[0.2em] text-zinc-500">Current relation</div>
                 <div className="mt-3 text-3xl font-black text-zinc-100">
                   {relation.shortLabel}
                 </div>
@@ -240,7 +240,7 @@ const RepeatPlayerDetail: React.FC<RepeatPlayerDetailProps> = ({
                 <section className="rounded-3xl border border-zinc-800 bg-zinc-950/40 p-5">
                   <div className="flex items-center justify-between gap-3">
                     <h4 className="text-sm font-black uppercase tracking-[0.2em] text-zinc-400">Watch note</h4>
-                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                    <span className="text-2xs font-bold uppercase tracking-[0.2em] text-zinc-500">
                       Local only
                     </span>
                   </div>
@@ -343,7 +343,7 @@ const RepeatPlayerDetail: React.FC<RepeatPlayerDetailProps> = ({
                               <div className="text-sm font-semibold text-zinc-100">
                                 {formatMatchDate(match.timestamp)}
                               </div>
-                              <div className="mt-2 flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-[0.2em]">
+                              <div className="mt-2 flex flex-wrap gap-2 text-2xs font-bold uppercase tracking-[0.2em]">
                                 <span className={`rounded-full px-2 py-1 ${match.team === 'with' ? 'bg-blue-500/10 text-blue-300' : 'bg-rose-500/10 text-rose-300'}`}>
                                   {match.team === 'with' ? 'Ally game' : 'Enemy game'}
                                 </span>

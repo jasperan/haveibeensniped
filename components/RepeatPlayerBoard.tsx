@@ -131,7 +131,7 @@ const RepeatPlayerBoard: React.FC<RepeatPlayerBoardProps> = ({
                   <div className={`text-3xl font-black leading-none ${tierStyle.scoreClassName}`}>
                     {player.risk.score}
                   </div>
-                  <div className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${tierStyle.badgeClassName}`}>
+                  <div className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-2xs font-bold uppercase tracking-[0.2em] ${tierStyle.badgeClassName}`}>
                     {tierStyle.label}
                   </div>
                 </div>
@@ -139,14 +139,14 @@ const RepeatPlayerBoard: React.FC<RepeatPlayerBoardProps> = ({
 
               <div className="mt-5 grid grid-cols-2 gap-3">
                 <div className="rounded-2xl border border-zinc-800 bg-zinc-950/50 p-3">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                  <div className="text-2xs font-bold uppercase tracking-[0.2em] text-zinc-500">
                     Shared matches
                   </div>
                   <div className="mt-2 text-xl font-bold text-zinc-100">{player.totalGames}</div>
                 </div>
 
                 <div className="rounded-2xl border border-zinc-800 bg-zinc-950/50 p-3">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                  <div className="text-2xs font-bold uppercase tracking-[0.2em] text-zinc-500">
                     Record
                   </div>
                   <div className="mt-2 text-xl font-bold text-zinc-100">
@@ -161,11 +161,11 @@ const RepeatPlayerBoard: React.FC<RepeatPlayerBoardProps> = ({
 
               <div className="mt-4 flex items-center justify-between gap-3">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${relation.badgeClassName}`}>
+                  <span className={`inline-flex rounded-full px-2.5 py-1 text-2xs font-bold uppercase tracking-[0.2em] ${relation.badgeClassName}`}>
                     {relation.label}
                   </span>
                   {player.watchNote && (
-                    <span className="inline-flex rounded-full border border-amber-500/20 bg-amber-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-amber-300">
+                    <span className="inline-flex rounded-full border border-amber-500/20 bg-amber-500/10 px-2.5 py-1 text-2xs font-bold uppercase tracking-[0.2em] text-amber-300">
                       note saved
                     </span>
                   )}

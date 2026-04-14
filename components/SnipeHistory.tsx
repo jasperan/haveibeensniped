@@ -40,12 +40,12 @@ const SnipeHistory: React.FC<SnipeHistoryProps> = ({ snipes, onInspect }) => {
               </div>
               <div className="text-right shrink-0">
                 <div className="text-sm font-bold text-emerald-500">{snipe.wins}W - {snipe.losses}L</div>
-                <div className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Overall Record</div>
+                <div className="text-2xs text-zinc-500 uppercase tracking-widest font-bold">Overall Record</div>
                 {onInspect && (
                   <button
                     type="button"
                     onClick={() => onInspect(snipe.puuid)}
-                    className="mt-3 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-indigo-300 transition-colors hover:border-indigo-400/50 hover:text-indigo-200"
+                    className="mt-3 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-3 py-1 text-2xs font-bold uppercase tracking-[0.2em] text-indigo-300 transition-colors hover:border-indigo-400/50 hover:text-indigo-200"
                   >
                     Open evidence
                   </button>
@@ -62,14 +62,14 @@ const SnipeHistory: React.FC<SnipeHistoryProps> = ({ snipes, onInspect }) => {
                       <img src={getChampIcon(match.targetChampId)} className="w-8 h-8 rounded-full border-2 border-zinc-900" title="Their Champ" />
                     </div>
                     <div>
-                      <span className={`text-xs font-bold uppercase tracking-widest ${match.team === 'with' ? 'text-blue-400' : 'text-orange-400'}`}>
+                      <span className={`text-xs font-bold uppercase tracking-widest ${match.team === 'with' ? 'text-blue-400' : 'text-rose-400'}`}>
                         {match.team === 'with' ? 'Ally' : 'Enemy'}
                       </span>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-4 shrink-0">
-                    <div className="text-[10px] text-zinc-600 font-bold uppercase">
+                    <div className="text-2xs text-zinc-600 font-bold uppercase">
                       {new Date(match.timestamp).toLocaleDateString()}
                     </div>
                     <div className={`text-xs font-black uppercase px-2 py-1 rounded ${match.win ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>

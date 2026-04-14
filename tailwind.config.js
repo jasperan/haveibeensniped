@@ -8,7 +8,15 @@ export default {
     "./index.tsx",
   ],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        sans: ['Outfit', 'system-ui', 'sans-serif'],
+        mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+      },
+      fontSize: {
+        '2xs': ['0.625rem', { lineHeight: '1rem', letterSpacing: '0.15em' }],
+      },
+    },
   },
   plugins: [],
 }
