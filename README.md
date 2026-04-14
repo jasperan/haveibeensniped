@@ -8,9 +8,9 @@ Check if you're playing with stream snipers! This tool analyzes your current Lea
 
 ## Features
 
-- **Real-time Lobby Detection**: Instantly checks if you're in a live game
-- **100 Match Deep Scan**: Analyzes your last 100 matches to find overlaps
-- **Win/Loss Tracking**: See your history with each player
+- **Loading Screen Check**: Scan your lobby while the game loads, no waiting for post-game stats
+- **100-Match Deep Scan**: Cross-references every lobby participant against your last 100 games
+- **Risk Scoring**: Tracks win/loss records, repeat frequency, and flags suspicious patterns
 - **All Regions Supported**: Works with all Riot Games regions
 
 ## Local Encounter Memory
@@ -107,7 +107,7 @@ The frontend will start on `http://localhost:4000`
 2. Start the backend with `npm run demo:backend` or `cd backend && source .venv/bin/activate && HIBS_DEMO_MODE=1 python main.py`
 3. Start the frontend with `npm run dev`
 4. Open `http://localhost:4000`
-5. Click **Try Demo Scan**
+5. Click **Try demo**
 6. Open a repeat-player card and save a watch note
 
 This path works without a live League client and without a real Riot API key. For one-command local demo startup, use `npm run demo`.
