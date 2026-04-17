@@ -99,6 +99,20 @@ SCHEMA_STATEMENTS: Iterable[str] = (
 )
 
 
+def _summarize_repeat_player(player: dict) -> dict:
+    """Shape a repeat-player record for memory-overview responses."""
+    return {
+        "puuid": player["puuid"],
+        "gameName": player["gameName"],
+        "tagLine": player["tagLine"],
+        "region": player["region"],
+        "totalGames": player["stats"]["total_encounters"],
+        "risk": score_repeat_player(player["stats"]),
+        "note": player.get("note"),
+        "watchNote": player.get("note"),
+    }
+
+
 class Storage:
     """Small SQLite wrapper for local scan memory."""
 
@@ -688,14 +702,7 @@ class Storage:
 
         top_repeat_players = [
             {
-                "puuid": player["puuid"],
-                "gameName": player["gameName"],
-                "tagLine": player["tagLine"],
-                "region": player["region"],
-                "totalGames": player["stats"]["total_encounters"],
-                "risk": score_repeat_player(player["stats"]),
-                "note": player.get("note"),
-                "watchNote": player.get("note"),
+                **_summarize_repeat_player(player),
                 "latestPlayedAt": player["encounters"][0]["playedAt"] if player["encounters"] else None,
             }
             for player in repeat_players
@@ -766,14 +773,7 @@ class Storage:
                     {
                         "trackedProfileId": tracked_profile_id,
                         "trackedProfileName": tracked_profile_name,
-                        "puuid": player["puuid"],
-                        "gameName": player["gameName"],
-                        "tagLine": player["tagLine"],
-                        "region": player["region"],
-                        "totalGames": player["stats"]["total_encounters"],
-                        "risk": score_repeat_player(player["stats"]),
-                        "note": player.get("note"),
-                        "watchNote": player.get("note"),
+                        **_summarize_repeat_player(player),
                     }
                 )
 

@@ -101,7 +101,7 @@ def check_integrity():
     # Use a known stable account for testing or own account
     console.print("We need a valid Riot ID to test the API connection.")
     game_name = Prompt.ask("Enter a known Game Name", default="Riot")
-    tag_line = Prompt.ask("Enter Tag Line", default="NA1") # Assuming a default/dummy
+    tag_line = Prompt.ask("Enter Tag Line", default="NA1")
     region = Prompt.ask("Enter Region", default="NA1")
 
     with Progress(

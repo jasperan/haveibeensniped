@@ -1,13 +1,15 @@
-"""
-Riot API Client
-Handles all interactions with Riot Games API
-"""
+"""Riot Games API client."""
 
-import requests
+import logging
 import time
 from typing import Any, Dict, List, Optional
 
+import requests
+
 from utils import get_platform_endpoint, get_regional_endpoint
+
+
+logger = logging.getLogger(__name__)
 
 
 def normalize_riot_id_fields(participant: Dict[str, Any]) -> Dict[str, str]:
@@ -55,57 +57,32 @@ class RiotAPIClient:
         self.cache = {}  # Simple in-memory cache for PUUIDs
         
     def _make_request(self, url: str, params: Optional[Dict] = None) -> Optional[Dict]:
-        """
-        Make a request to Riot API with error handling
-        
-        Args:
-            url: Full API endpoint URL
-            params: Query parameters
-            
-        Returns:
-            JSON response or None if error
-        """
+        """Make a Riot API request, returning JSON on 200 or None on errors."""
         try:
             response = self.session.get(url, params=params, timeout=10)
-            
+
             if response.status_code == 200:
                 return response.json()
-            elif response.status_code == 404:
+            if response.status_code == 404:
                 return None
-            elif response.status_code == 429:
-                # Rate limited
+            if response.status_code == 429:
                 retry_after = int(response.headers.get('Retry-After', 1))
                 time.sleep(retry_after)
                 return self._make_request(url, params)
-            else:
-                print(f"API Error {response.status_code}: {response.text}")
-                return None
-                
-        except requests.exceptions.RequestException as e:
-            print(f"Request failed: {e}")
+
+            logger.warning("Riot API error %s: %s", response.status_code, response.text)
+            return None
+
+        except requests.exceptions.RequestException as exc:
+            logger.warning("Riot API request failed: %s", exc)
             return None
     
     def get_puuid_by_riot_id(self, game_name: str, tag_line: str, region: str) -> Optional[str]:
-        """
-        Get PUUID from Riot ID (name#tag)
-        
-        Uses: GET /riot/account/v1/accounts/by-riot-id/{gameName}/{tagLine}
-        Where gameName is the part to the left of "#" and tagLine is the part to the right.
-        
-        Args:
-            game_name: Summoner name (left of #)
-            tag_line: Riot tag (right of #)
-            region: Platform region (e.g., 'NA1') - used for regional routing
-            
-        Returns:
-            PUUID string or None
-        """
-        # Check cache first
+        """Resolve a Riot ID (name#tag) to a PUUID via the Account API."""
         cache_key = f"{game_name}#{tag_line}#{region}"
         if cache_key in self.cache:
             return self.cache[cache_key]
-        
-        # Account API uses regional routing (americas, europe, asia, sea)
+
         regional = get_regional_endpoint(region)
         url = f"https://{regional}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{game_name}/{tag_line}"
         
@@ -118,20 +95,7 @@ class RiotAPIClient:
         return None
     
     def get_active_game(self, puuid: str, region: str) -> Optional[Dict]:
-        """
-        Check if a player is currently in a live game
-        
-        Uses: GET /lol/spectator/v5/active-games/by-summoner/{encryptedPUUID}
-        Where encryptedPUUID is the PUUID obtained from the account API.
-        
-        Args:
-            puuid: Player's PUUID (from get_puuid_by_riot_id)
-            region: Platform region (e.g., 'NA1', 'EUW1') - used for platform routing
-            
-        Returns:
-            Game data or None if not in game
-        """
-        # Spectator API uses platform routing (na1, euw1, kr, etc.)
+        """Fetch a player's active spectator game, or None if not in-game."""
         platform = get_platform_endpoint(region)
         url = f"https://{platform}.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/{puuid}"
         

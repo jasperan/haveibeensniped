@@ -30,7 +30,6 @@ DEFAULT_RUNTIME_CONFIG = {
 }
 
 
-# Regional routing mapping for Riot API
 REGION_TO_REGIONAL = {
     'NA1': 'americas',
     'BR1': 'americas',
@@ -108,26 +107,10 @@ def load_runtime_config(config_path: str | Path | None = None) -> dict:
 
 
 def get_regional_endpoint(platform: str) -> str:
-    """
-    Convert platform code to regional endpoint for Account API
-
-    Args:
-        platform: Platform code (e.g., 'NA1', 'EUW1')
-
-    Returns:
-        Regional endpoint (e.g., 'americas', 'europe')
-    """
+    """Map a platform code (e.g. 'NA1') to its regional routing value."""
     return REGION_TO_REGIONAL.get(platform.upper(), 'americas')
 
 
 def get_platform_endpoint(platform: str) -> str:
-    """
-    Get the platform-specific endpoint URL
-
-    Args:
-        platform: Platform code (e.g., 'NA1', 'EUW1')
-
-    Returns:
-        Platform endpoint URL
-    """
+    """Return the lowercased platform code used for platform-routed endpoints."""
     return platform.lower()

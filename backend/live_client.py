@@ -8,6 +8,21 @@ from riot_client import normalize_riot_id_fields
 
 PLACEHOLDER_RIOT_ID = "Unknown#UNKNOWN"
 
+DISCONNECTED_STATUS: Dict[str, Any] = {
+    "connected": False,
+    "inGame": False,
+    "activePlayer": None,
+    "participantCount": 0,
+    "gameMode": None,
+    "mapName": None,
+    "sessionFingerprint": None,
+}
+
+
+def disconnected_status() -> Dict[str, Any]:
+    """Return a fresh copy of the disconnected live-client status payload."""
+    return dict(DISCONNECTED_STATUS)
+
 
 class LiveClient:
     BASE_URL = "https://127.0.0.1:2999/liveclientdata/allgamedata"
@@ -70,15 +85,7 @@ class LiveClient:
         }
 
     def _disconnected(self) -> Dict[str, Any]:
-        return {
-            "connected": False,
-            "inGame": False,
-            "activePlayer": None,
-            "participantCount": 0,
-            "gameMode": None,
-            "mapName": None,
-            "sessionFingerprint": None,
-        }
+        return disconnected_status()
 
     def _normalize_active_player(self, participant: Dict[str, Any]) -> Dict[str, str]:
         normalized = normalize_riot_id_fields(self._with_riot_id_shim(participant))

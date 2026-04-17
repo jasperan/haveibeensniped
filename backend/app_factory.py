@@ -4,7 +4,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 
 from demo_data import DemoRiotClient
-from live_client import LiveClient
+from live_client import LiveClient, disconnected_status
 from scan_service import ScanService
 
 
@@ -25,18 +25,6 @@ SCAN_ENDPOINT = {
     "path": "/api/scan",
     "description": "Encounter scan endpoint",
 }
-
-
-def disconnected_live_client_status():
-    return {
-        "connected": False,
-        "inGame": False,
-        "activePlayer": None,
-        "participantCount": 0,
-        "gameMode": None,
-        "mapName": None,
-        "sessionFingerprint": None,
-    }
 
 
 def api_is_configured(config: dict) -> bool:
@@ -143,7 +131,7 @@ def create_app(
 
     @app.route("/api/live-client/status", methods=["GET"])
     def live_client_status():
-        status = disconnected_live_client_status()
+        status = disconnected_status()
 
         try:
             live_status = app.extensions["live_client"].get_status()
