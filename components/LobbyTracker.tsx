@@ -1,18 +1,18 @@
 
 import React from 'react';
-import { CurrentGame, SnipedPlayer, Player } from '../types';
+import { CurrentGame, RepeatPlayer, Player } from '../types';
 import { getChampIcon, CHAMPION_MAP } from '../constants';
 
 interface LobbyTrackerProps {
   game: CurrentGame;
-  snipes: SnipedPlayer[];
+  snipes: RepeatPlayer[];
   userName: string;
 }
 
 // Define props for PlayerCard
 interface PlayerCardProps {
   player: Player;
-  snipe?: SnipedPlayer;
+  snipe?: RepeatPlayer;
   isUser: boolean;
 }
 

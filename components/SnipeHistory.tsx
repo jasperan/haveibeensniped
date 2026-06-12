@@ -1,9 +1,9 @@
 import React from 'react';
-import { SnipedPlayer } from '../types';
+import { RepeatPlayer } from '../types';
 import { getChampIcon, CHAMPION_MAP } from '../constants';
 
 interface SnipeHistoryProps {
-  snipes: SnipedPlayer[];
+  snipes: RepeatPlayer[];
   onInspect?: (puuid: string) => void;
 }
 
@@ -32,7 +32,7 @@ const SnipeHistory: React.FC<SnipeHistoryProps> = ({ snipes, onInspect }) => {
               <div className="flex items-center gap-3 min-w-0">
                 <img src={getChampIcon(snipe.championId)} className="w-10 h-10 rounded-lg" alt="champ" />
                 <div className="min-w-0">
-                  <h3 className="font-bold text-lg truncate">{snipe.summonerName}</h3>
+                  <h3 className="font-bold text-lg truncate">{snipe.gameName}</h3>
                   <p className="text-xs text-zinc-500 font-medium truncate">
                     Currently playing {CHAMPION_MAP[snipe.championId] || 'Unknown champion'}
                   </p>

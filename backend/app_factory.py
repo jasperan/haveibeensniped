@@ -6,20 +6,10 @@ from flask_cors import CORS
 from demo_data import DemoRiotClient
 from live_client import LiveClient, disconnected_status
 from scan_service import ScanService
+from utils import DEFAULT_RUNTIME_CONFIG
 
 
-DEFAULT_CORS_ORIGINS = [
-    "http://localhost:4000",
-    "http://127.0.0.1:4000",
-    "http://localhost:4001",
-    "http://127.0.0.1:4001",
-    "http://localhost:4002",
-    "http://127.0.0.1:4002",
-    "http://localhost:4003",
-    "http://127.0.0.1:4003",
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-]
+DEFAULT_CORS_ORIGINS = list(DEFAULT_RUNTIME_CONFIG["CORS_ORIGINS"])
 SCAN_ENDPOINT = {
     "method": "POST",
     "path": "/api/scan",

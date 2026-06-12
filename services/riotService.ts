@@ -5,10 +5,8 @@ import {
   MemoryOverview,
   MemorySummary,
   Region,
-  RepeatPlayer,
   ScanCurrentGame,
   ScanResponse,
-  SnipedPlayer,
 } from '../types';
 
 const API_URL = (
@@ -47,26 +45,6 @@ export const mapScanCurrentGameToCurrentGame = (game: ScanCurrentGame): CurrentG
     teamId: participant.teamId,
   })),
 });
-
-export const mapRepeatPlayersToSnipedPlayers = (
-  repeatPlayers: RepeatPlayer[],
-): SnipedPlayer[] => repeatPlayers.map((player) => ({
-  summonerName: player.gameName,
-  tagLine: player.tagLine,
-  puuid: player.puuid,
-  championId: player.championId,
-  matches: player.matches.map((match) => ({
-    matchId: match.matchId,
-    timestamp: match.timestamp,
-    win: match.win,
-    team: match.team,
-    playerChampId: match.playerChampId,
-    targetChampId: match.targetChampId,
-  })),
-  totalGames: player.totalGames,
-  wins: player.wins,
-  losses: player.losses,
-}));
 
 /**
  * Riot API Service

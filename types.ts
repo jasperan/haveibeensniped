@@ -25,17 +25,6 @@ export interface RepeatPlayerMatch extends MatchHistoryEntry {
   queueId?: number;
 }
 
-export interface SnipedPlayer {
-  summonerName: string;
-  tagLine: string;
-  puuid: string;
-  championId: number;
-  matches: MatchHistoryEntry[];
-  totalGames: number;
-  wins: number;
-  losses: number;
-}
-
 export interface CurrentGame {
   gameId: number;
   participants: Player[];

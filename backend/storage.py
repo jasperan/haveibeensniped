@@ -847,14 +847,13 @@ class Storage:
 
     @staticmethod
     def _count_consecutive_scan_hits(ordered_scan_ids, hit_scan_ids) -> int:
+        # ordered_scan_ids runs most-recent-first; count the unbroken streak of
+        # hits starting at the latest scan (zero if the latest scan was a miss).
         consecutive = 0
         for scan_id in ordered_scan_ids:
-            if scan_id in hit_scan_ids:
-                consecutive += 1
-                continue
-            if consecutive:
+            if scan_id not in hit_scan_ids:
                 break
-            return 0
+            consecutive += 1
         return consecutive
 
     @staticmethod

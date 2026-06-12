@@ -23,9 +23,6 @@ DEFAULT_RUNTIME_CONFIG = {
         "http://127.0.0.1:5173",
     ],
     "DATABASE_PATH": "data/haveibeensniped.db",
-    "CACHE_ENABLED": True,
-    "CACHE_TTL": 300,
-    "RATE_LIMIT_PER_SECOND": 19,
     "DEMO_MODE": False,
 }
 
@@ -93,14 +90,6 @@ def load_runtime_config(config_path: str | Path | None = None) -> dict:
             *DEFAULT_RUNTIME_CONFIG["CORS_ORIGINS"],
         ])),
         "PORT": file_config.get("port", DEFAULT_RUNTIME_CONFIG["PORT"]),
-        "CACHE_ENABLED": file_config.get(
-            "cache_enabled", DEFAULT_RUNTIME_CONFIG["CACHE_ENABLED"]
-        ),
-        "CACHE_TTL": file_config.get("cache_ttl", DEFAULT_RUNTIME_CONFIG["CACHE_TTL"]),
-        "RATE_LIMIT_PER_SECOND": file_config.get(
-            "rate_limit_per_second",
-            DEFAULT_RUNTIME_CONFIG["RATE_LIMIT_PER_SECOND"],
-        ),
         "DEMO_MODE": bool(demo_mode),
         "API_CONFIGURED": api_configured,
     }

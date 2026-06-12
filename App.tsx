@@ -8,7 +8,6 @@ import RepeatPlayerDetail from './components/RepeatPlayerDetail';
 import SnipeHistory from './components/SnipeHistory';
 import {
   RiotService,
-  mapRepeatPlayersToSnipedPlayers,
   mapScanCurrentGameToCurrentGame,
 } from './services/riotService';
 import { CurrentGame, LiveClientStatus, MemorySummary, Region, RepeatPlayer } from './types';
@@ -105,11 +104,6 @@ const App: React.FC = () => {
   const autoScanInFlightRef = useRef(false);
   const lastAutoScanFingerprintRef = useRef<string | null>(null);
   const lastScanSourceRef = useRef<'manual' | 'auto' | 'demo' | null>(null);
-
-  const snipedPlayers = useMemo(
-    () => mapRepeatPlayersToSnipedPlayers(repeatPlayers),
-    [repeatPlayers],
-  );
 
   const liveClientBanner = useMemo(
     () => getLiveClientBanner(liveClientStatus, lastAutoScanFingerprint, loading),
@@ -382,7 +376,7 @@ const App: React.FC = () => {
 
             <LobbyTracker
               game={currentGame}
-              snipes={snipedPlayers}
+              snipes={repeatPlayers}
               userName={searchedUser?.name || ''}
             />
 
@@ -393,7 +387,7 @@ const App: React.FC = () => {
             />
 
             <SnipeHistory
-              snipes={snipedPlayers}
+              snipes={repeatPlayers}
               onInspect={handleInspectRepeatPlayer}
             />
           </div>
