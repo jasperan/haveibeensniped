@@ -96,7 +96,11 @@ install_deps() {
 
     if [ ! -f backend/config.yaml ]; then
         cp backend/config.yaml.example backend/config.yaml
-        success "Created backend/config.yaml from example"
+        # This file holds the Riot API key: `cp` inherits the umask, which is
+        # world-readable on most systems. Match backend/cli.py, which writes the
+        # same file 0600.
+        chmod 600 backend/config.yaml
+        success "Created backend/config.yaml from example (mode 600)"
     fi
 
     if [ ! -f .env.local ]; then
