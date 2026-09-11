@@ -3,6 +3,7 @@
 import logging
 import time
 from typing import Any, Dict, List, Optional
+from urllib.parse import quote
 
 import requests
 
@@ -84,7 +85,14 @@ class RiotAPIClient:
             return self.cache[cache_key]
 
         regional = get_regional_endpoint(region)
-        url = f"https://{regional}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{game_name}/{tag_line}"
+        # game_name/tag_line arrive from unauthenticated request bodies: encode them as
+        # single path segments so they cannot add "/", "?", ".." or "#" to the request.
+        encoded_name = quote(str(game_name), safe="")
+        encoded_tag = quote(str(tag_line), safe="")
+        url = (
+            f"https://{regional}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/"
+            f"{encoded_name}/{encoded_tag}"
+        )
         
         data = self._make_request(url)
         if data and 'puuid' in data:
@@ -97,7 +105,10 @@ class RiotAPIClient:
     def get_active_game(self, puuid: str, region: str) -> Optional[Dict]:
         """Fetch a player's active spectator game, or None if not in-game."""
         platform = get_platform_endpoint(region)
-        url = f"https://{platform}.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/{puuid}"
+        url = (
+            f"https://{platform}.api.riotgames.com/lol/spectator/v5/active-games/"
+            f"by-summoner/{quote(str(puuid), safe='')}"
+        )
         
         return self._make_request(url)
     
@@ -114,7 +125,10 @@ class RiotAPIClient:
             List of match IDs
         """
         regional = get_regional_endpoint(region)
-        url = f"https://{regional}.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids"
+        url = (
+            f"https://{regional}.api.riotgames.com/lol/match/v5/matches/"
+            f"by-puuid/{quote(str(puuid), safe='')}/ids"
+        )
         params = {'start': 0, 'count': min(count, 100)}
         
         data = self._make_request(url, params)
@@ -132,7 +146,10 @@ class RiotAPIClient:
             Match details or None
         """
         regional = get_regional_endpoint(region)
-        url = f"https://{regional}.api.riotgames.com/lol/match/v5/matches/{match_id}"
+        url = (
+            f"https://{regional}.api.riotgames.com/lol/match/v5/matches/"
+            f"{quote(str(match_id), safe='')}"
+        )
         
         return self._make_request(url)
     
