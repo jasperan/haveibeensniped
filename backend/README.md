@@ -169,5 +169,10 @@ For production:
 
 ```bash
 pip install gunicorn
-gunicorn -w 4 -b 0.0.0.0:5000 main:app
+gunicorn -w 4 -b 127.0.0.1:5000 main:app
 ```
+
+> **Bind address matters here.** Gunicorn does not read `HIBS_BIND_HOST`, so the `-b` address is
+> the real bind and overrides the loopback default that `main.py` applies for safety. The Flask
+> endpoints have **no authentication**, so keep Gunicorn on loopback and terminate authentication
+> at a reverse proxy before publishing the service on any other interface.
