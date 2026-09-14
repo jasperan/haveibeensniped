@@ -19,23 +19,23 @@ interface PlayerCardProps {
 // Moved PlayerCard outside of the main component to resolve TS 'key' prop errors and improve rendering performance
 const PlayerCard: React.FC<PlayerCardProps> = ({ player, snipe, isUser }) => {
   return (
-    <div className={`p-4 rounded-xl border flex items-center justify-between transition-all group ${
+    <div className={`p-4 rounded-xl border flex flex-wrap gap-3 items-center justify-between transition-all group ${
       snipe 
         ? 'bg-indigo-500/10 border-indigo-500 shadow-[0_0_15px_-3px_rgba(99,102,241,0.3)]' 
         : 'bg-zinc-900/50 border-zinc-800'
     } ${isUser ? 'border-zinc-500' : ''}`}>
-      <div className="flex items-center gap-4">
-        <div className="relative">
+      <div className="flex min-w-0 max-w-full items-center gap-4">
+        <div className="relative shrink-0">
           <img src={getChampIcon(player.championId)} alt="champ" className="w-12 h-12 rounded-lg border border-zinc-700" />
           {snipe && (
             <div className="absolute -top-2 -right-2 bg-indigo-500 text-2xs font-bold px-1.5 py-0.5 rounded-md uppercase tracking-tighter">
-              Sniped
+              Repeat
             </div>
           )}
         </div>
-        <div>
-          <div className="flex items-center gap-2">
-            <span className={`font-bold ${isUser ? 'text-zinc-100' : 'text-zinc-300'}`}>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={`truncate font-bold ${isUser ? 'text-zinc-100' : 'text-zinc-300'}`}>
               {player.summonerName}
             </span>
             <span className="text-zinc-600 text-xs font-mono">#{player.tagLine}</span>
@@ -69,7 +69,7 @@ const LobbyTracker: React.FC<LobbyTrackerProps> = ({ game, snipes, userName }) =
   const redTeam = game.participants.filter(p => p.teamId === 200);
 
   return (
-    <div className="grid lg:grid-cols-2 gap-12 mt-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mt-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Blue Team */}
       <div className="space-y-4">
         <div className="flex items-center justify-between mb-4 border-b border-blue-900/30 pb-2">

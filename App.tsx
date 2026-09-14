@@ -315,7 +315,7 @@ const App: React.FC = () => {
     <div className="min-h-screen league-gradient flex flex-col">
       <Navbar />
 
-      <main className="max-w-7xl mx-auto pb-24 relative flex-grow">
+      <main className="w-full min-w-0 max-w-7xl mx-auto pb-24 relative flex-grow">
         {/* Background decorations — single-hue indigo */}
         <div className="absolute top-0 right-0 -z-10 w-[500px] h-[500px] bg-indigo-600/8 blur-[140px] rounded-full"></div>
         <div className="absolute top-60 left-0 -z-10 w-[350px] h-[350px] bg-indigo-800/6 blur-[120px] rounded-full"></div>

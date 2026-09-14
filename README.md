@@ -1,5 +1,20 @@
 # Have I Been Sniped?
 
+## Familiar names. Know the pattern.
+
+A field-notes-inspired lobby workspace: clearer search controls, a readable encounter timeline, and context before conclusions. Repeated encounters are signals, not proof of intent.
+
+![Have I Been Sniped encounter workspace](docs/visuals/desktop.jpg)
+
+<details><summary>Built-in demo results · mobile layout</summary>
+
+![Local demo scan results](docs/visuals/demo.jpg)
+<img src="docs/visuals/mobile.jpg" alt="Responsive Riot ID search and encounter preview" width="320">
+
+</details>
+
+Captured from the actual frontend using the existing deterministic demo providers in an isolated database. No Riot account or live lobby was queried. [Visual notes](docs/visuals/README.md).
+
 ![](./img/title.png)
 
 ![](./img/1.png)

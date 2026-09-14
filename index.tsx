@@ -26,3 +26,4 @@ try {
     </div>
   `;
 }
+import './src/scout.css';

@@ -73,7 +73,7 @@ const MemoryCenter: React.FC<MemoryCenterProps> = ({ summary, loading }) => {
           ))}
         </div>
 
-        <div className="grid gap-6 xl:grid-cols-[1.1fr,0.9fr]">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.1fr),minmax(0,0.9fr)]">
           <div className="glass-card rounded-3xl border border-zinc-800/70 p-6">
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-sm font-black uppercase tracking-[0.2em] text-zinc-400">

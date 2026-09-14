@@ -25,7 +25,7 @@ const SnipeHistory: React.FC<SnipeHistoryProps> = ({ snipes, onInspect }) => {
         </p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {snipesWithMatches.map((snipe) => (
           <div key={snipe.puuid} className="glass-card rounded-2xl overflow-hidden border-zinc-700/50">
             <div className="p-5 bg-gradient-to-br from-zinc-800/80 to-zinc-900/40 border-b border-zinc-700/50 flex items-center justify-between gap-4">

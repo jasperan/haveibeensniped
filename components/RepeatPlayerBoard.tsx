@@ -93,7 +93,7 @@ const RepeatPlayerBoard: React.FC<RepeatPlayerBoardProps> = ({
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
         {players.map((player) => {
           const tierStyle = TIER_STYLES[player.risk.tier];
           const relation = getRelationPresentation(player.relation);
