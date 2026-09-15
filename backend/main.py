@@ -3,7 +3,7 @@
 import os
 
 from app_factory import create_app
-from demo_data import DemoLiveClient, DemoRiotClient
+from demo_data import DemoLiveClient
 from live_client import LiveClient
 from riot_client import RiotAPIClient
 from storage import Storage

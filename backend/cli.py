@@ -32,8 +32,12 @@ def load_config() -> Dict:
     return {}
 
 def save_config(config: Dict):
-    with open(CONFIG_FILE, 'w') as f:
+    # This file holds the Riot API key, so keep it owner-readable only. The mode passed to
+    # os.open only applies when the file is created, hence the explicit chmod afterwards.
+    fd = os.open(CONFIG_FILE, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, 'w') as f:
         yaml.dump(config, f)
+    os.chmod(CONFIG_FILE, 0o600)
 
 def load_memory() -> Dict:
     if os.path.exists(MEMORY_FILE):
