@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { CurrentGame, RepeatPlayer, Player } from '../types';
 import { getChampIcon, CHAMPION_MAP } from '../constants';
@@ -9,108 +8,96 @@ interface LobbyTrackerProps {
   userName: string;
 }
 
-// Define props for PlayerCard
 interface PlayerCardProps {
   player: Player;
   snipe?: RepeatPlayer;
   isUser: boolean;
 }
 
-// Moved PlayerCard outside of the main component to resolve TS 'key' prop errors and improve rendering performance
-const PlayerCard: React.FC<PlayerCardProps> = ({ player, snipe, isUser }) => {
-  return (
-    <div className={`p-4 rounded-xl border flex items-center justify-between transition-all group ${
-      snipe 
-        ? 'bg-indigo-500/10 border-indigo-500 shadow-[0_0_15px_-3px_rgba(99,102,241,0.3)]' 
-        : 'bg-zinc-900/50 border-zinc-800'
-    } ${isUser ? 'border-zinc-500' : ''}`}>
-      <div className="flex items-center gap-4">
-        <div className="relative">
-          <img src={getChampIcon(player.championId)} alt="champ" className="w-12 h-12 rounded-lg border border-zinc-700" />
+/* One row per participant. The case line under the name is the signature:
+   region · shared matches · record, in mono, aligned in one column. */
+const PlayerCard: React.FC<PlayerCardProps> = ({ player, snipe, isUser }) => (
+  <div className="flex items-center justify-between gap-4 border-b border-line py-3 last:border-0">
+    <div className="flex min-w-0 items-center gap-3">
+      <img
+        src={getChampIcon(player.championId)}
+        alt=""
+        className="h-9 w-9 shrink-0 rounded border border-line bg-raised object-cover"
+      />
+      <div className="min-w-0">
+        <div className="flex items-baseline gap-1.5">
+          <span className={`truncate text-[13px] ${isUser ? 'text-ink' : 'text-ink2'}`}>
+            {player.summonerName}
+          </span>
+          <span className="font-mono text-[11px] text-ink3">#{player.tagLine}</span>
+        </div>
+        <div className="mt-0.5 flex items-center gap-2">
+          <span className="text-[11px] text-ink3">
+            {CHAMPION_MAP[player.championId] || 'Unknown champion'}
+          </span>
           {snipe && (
-            <div className="absolute -top-2 -right-2 bg-indigo-500 text-2xs font-bold px-1.5 py-0.5 rounded-md uppercase tracking-tighter">
-              Sniped
-            </div>
+            <span className="case-line">
+              · {snipe.totalGames} matches · {snipe.wins}W/{snipe.losses}L
+            </span>
           )}
         </div>
-        <div>
-          <div className="flex items-center gap-2">
-            <span className={`font-bold ${isUser ? 'text-zinc-100' : 'text-zinc-300'}`}>
-              {player.summonerName}
-            </span>
-            <span className="text-zinc-600 text-xs font-mono">#{player.tagLine}</span>
-          </div>
-          <div className="text-xs text-zinc-500 font-medium">
-            {CHAMPION_MAP[player.championId] || 'Unknown Champion'}
-          </div>
-        </div>
       </div>
-      
-      {snipe ? (
-        <div className="text-right">
-          <div className="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-1">Found in History</div>
-          <div className="flex items-center gap-2 justify-end">
-            <span className="text-sm font-bold text-zinc-200">{snipe.totalGames} Games</span>
-            <div className="flex gap-1 h-1.5 w-16 bg-zinc-800 rounded-full overflow-hidden">
-              <div style={{ width: `${(snipe.wins / snipe.totalGames) * 100}%` }} className="bg-emerald-500 h-full" />
-              <div style={{ width: `${(snipe.losses / snipe.totalGames) * 100}%` }} className="bg-rose-500 h-full" />
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="text-xs font-bold text-zinc-600 uppercase tracking-widest">Fresh Soul</div>
-      )}
     </div>
-  );
-};
+
+    {snipe ? (
+      <span className={`shrink-0 font-mono text-[11px] tabular-nums ${
+        snipe.risk.tier === 'high-attention' ? 'text-alert' : 'text-ink2'
+      }`}>
+        {snipe.risk.score}
+      </span>
+    ) : (
+      <span className="shrink-0 text-[11px] text-ink3">no prior matches</span>
+    )}
+  </div>
+);
+
+const TeamColumn = ({
+  label,
+  side,
+  players,
+  snipes,
+  userName,
+}: {
+  label: string;
+  side: 'blue' | 'red';
+  players: Player[];
+  snipes: RepeatPlayer[];
+  userName: string;
+}) => (
+  <div>
+    <div className="flex items-baseline justify-between border-b border-line pb-2">
+      <h2 className="flex items-center gap-2 text-[13px] text-ink">
+        <span className={`h-1.5 w-1.5 rounded-full ${side === 'blue' ? 'bg-ink2' : 'bg-alert'}`} />
+        {label}
+      </h2>
+      <span className="case-line">{players.length} players</span>
+    </div>
+    <div>
+      {players.map((p) => (
+        <PlayerCard
+          key={p.puuid}
+          player={p}
+          snipe={snipes.find(s => s.puuid === p.puuid)}
+          isUser={p.summonerName.toLowerCase() === userName.toLowerCase()}
+        />
+      ))}
+    </div>
+  </div>
+);
 
 const LobbyTracker: React.FC<LobbyTrackerProps> = ({ game, snipes, userName }) => {
   const blueTeam = game.participants.filter(p => p.teamId === 100);
   const redTeam = game.participants.filter(p => p.teamId === 200);
 
   return (
-    <div className="grid lg:grid-cols-2 gap-12 mt-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      {/* Blue Team */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between mb-4 border-b border-blue-900/30 pb-2">
-          <h2 className="text-blue-400 font-black text-xl italic uppercase tracking-tighter flex items-center gap-2">
-            <div className="w-2 h-6 bg-blue-500 rounded-full"></div>
-            Blue Team
-          </h2>
-          <span className="text-zinc-600 text-xs font-bold">ALLIES</span>
-        </div>
-        <div className="space-y-3">
-          {blueTeam.map(p => (
-            <PlayerCard 
-              key={p.puuid} 
-              player={p} 
-              snipe={snipes.find(s => s.puuid === p.puuid)}
-              isUser={p.summonerName.toLowerCase() === userName.toLowerCase()}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Red Team */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between mb-4 border-b border-rose-900/30 pb-2">
-          <h2 className="text-rose-400 font-black text-xl italic uppercase tracking-tighter flex items-center gap-2">
-            <div className="w-2 h-6 bg-rose-500 rounded-full"></div>
-            Red Team
-          </h2>
-          <span className="text-zinc-600 text-xs font-bold">OPPONENTS</span>
-        </div>
-        <div className="space-y-3">
-          {redTeam.map(p => (
-            <PlayerCard 
-              key={p.puuid} 
-              player={p} 
-              snipe={snipes.find(s => s.puuid === p.puuid)}
-              isUser={p.summonerName.toLowerCase() === userName.toLowerCase()}
-            />
-          ))}
-        </div>
-      </div>
+    <div className="mt-8 grid gap-x-12 gap-y-8 lg:grid-cols-2">
+      <TeamColumn label="Your team" side="blue" players={blueTeam} snipes={snipes} userName={userName} />
+      <TeamColumn label="Enemy team" side="red" players={redTeam} snipes={snipes} userName={userName} />
     </div>
   );
 };

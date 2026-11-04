@@ -13,39 +13,43 @@ const SnipeHistory: React.FC<SnipeHistoryProps> = ({ snipes, onInspect }) => {
   if (snipesWithMatches.length === 0) return null;
 
   return (
-    <div className="mt-16 space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-200">
-      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-        <div className="flex items-center gap-4">
-          <h2 className="text-2xl font-bold tracking-tight">RECENT SHARED MATCHES</h2>
-          <div className="h-px flex-1 bg-gradient-to-r from-zinc-800 to-transparent"></div>
+    <section className="mt-12">
+      <div className="flex flex-col gap-2 border-b border-line pb-3 md:flex-row md:items-baseline md:justify-between">
+        <div>
+          <h2 className="text-[15px] font-medium text-ink">Recent shared matches</h2>
+          <p className="mt-1 max-w-2xl text-[13px] leading-relaxed text-ink3">
+            The match-by-match view. The repeat-player board has the risk reasons and the evidence panel.
+          </p>
         </div>
-        <p className="max-w-2xl text-sm leading-relaxed text-zinc-500">
-          This stays as the quick match-by-match view. Use the repeat-player board for risk reasons
-          and the full evidence panel.
-        </p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid gap-4 pt-4 md:grid-cols-2">
         {snipesWithMatches.map((snipe) => (
-          <div key={snipe.puuid} className="glass-card rounded-2xl overflow-hidden border-zinc-700/50">
-            <div className="p-5 bg-gradient-to-br from-zinc-800/80 to-zinc-900/40 border-b border-zinc-700/50 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3 min-w-0">
-                <img src={getChampIcon(snipe.championId)} className="w-10 h-10 rounded-lg" alt="champ" />
+          <div key={snipe.puuid} className="panel overflow-hidden">
+            <div className="flex items-center justify-between gap-4 border-b border-line p-4">
+              <div className="flex min-w-0 items-center gap-3">
+                <img
+                  src={getChampIcon(snipe.championId)}
+                  alt=""
+                  className="h-9 w-9 shrink-0 rounded border border-line bg-raised object-cover"
+                />
                 <div className="min-w-0">
-                  <h3 className="font-bold text-lg truncate">{snipe.gameName}</h3>
-                  <p className="text-xs text-zinc-500 font-medium truncate">
-                    Currently playing {CHAMPION_MAP[snipe.championId] || 'Unknown champion'}
+                  <h3 className="truncate text-[14px] text-ink">{snipe.gameName}</h3>
+                  <p className="mt-0.5 truncate text-[11px] text-ink3">
+                    Now on {CHAMPION_MAP[snipe.championId] || 'an unknown champion'}
                   </p>
                 </div>
               </div>
-              <div className="text-right shrink-0">
-                <div className="text-sm font-bold text-emerald-500">{snipe.wins}W - {snipe.losses}L</div>
-                <div className="text-2xs text-zinc-500 uppercase tracking-widest font-bold">Overall Record</div>
+              <div className="shrink-0 text-right">
+                <div className="font-mono text-[13px] tabular-nums text-ink">
+                  {snipe.wins}W/{snipe.losses}L
+                </div>
+                <div className="mt-1 case-line">{snipe.totalGames} matches</div>
                 {onInspect && (
                   <button
                     type="button"
                     onClick={() => onInspect(snipe.puuid)}
-                    className="mt-3 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-3 py-1 text-2xs font-bold uppercase tracking-[0.2em] text-indigo-300 transition-colors hover:border-indigo-400/50 hover:text-indigo-200"
+                    className="mt-2 text-[11px] text-ink3 transition-colors hover:text-ink"
                   >
                     Open evidence
                   </button>
@@ -53,28 +57,34 @@ const SnipeHistory: React.FC<SnipeHistoryProps> = ({ snipes, onInspect }) => {
               </div>
             </div>
 
-            <div className="p-4 space-y-3">
+            <div className="divide-y divide-line">
               {snipe.matches.map((match) => (
-                <div key={match.matchId} className="flex items-center justify-between gap-4 bg-zinc-950/40 p-3 rounded-xl border border-zinc-800/50">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="flex -space-x-3">
-                      <img src={getChampIcon(match.playerChampId)} className="w-8 h-8 rounded-full border-2 border-zinc-900" title="Your Champ" />
-                      <img src={getChampIcon(match.targetChampId)} className="w-8 h-8 rounded-full border-2 border-zinc-900" title="Their Champ" />
+                <div key={match.matchId} className="flex items-center justify-between gap-4 px-4 py-2.5">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex -space-x-2">
+                      <img
+                        src={getChampIcon(match.playerChampId)}
+                        className="h-6 w-6 rounded border border-surface bg-raised"
+                        alt=""
+                        title="Your champion"
+                      />
+                      <img
+                        src={getChampIcon(match.targetChampId)}
+                        className="h-6 w-6 rounded border border-surface bg-raised"
+                        alt=""
+                        title="Their champion"
+                      />
                     </div>
-                    <div>
-                      <span className={`text-xs font-bold uppercase tracking-widest ${match.team === 'with' ? 'text-blue-400' : 'text-rose-400'}`}>
-                        {match.team === 'with' ? 'Ally' : 'Enemy'}
-                      </span>
-                    </div>
+                    <span className="text-[12px] text-ink2">
+                      {match.team === 'with' ? 'Ally game' : 'Enemy game'}
+                    </span>
                   </div>
 
-                  <div className="flex items-center gap-4 shrink-0">
-                    <div className="text-2xs text-zinc-600 font-bold uppercase">
-                      {new Date(match.timestamp).toLocaleDateString()}
-                    </div>
-                    <div className={`text-xs font-black uppercase px-2 py-1 rounded ${match.win ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
+                  <div className="flex shrink-0 items-center gap-4">
+                    <span className="case-line">{new Date(match.timestamp).toLocaleDateString()}</span>
+                    <span className={`text-[12px] ${match.win ? 'text-positive' : 'text-alert'}`}>
                       {match.win ? 'Win' : 'Loss'}
-                    </div>
+                    </span>
                   </div>
                 </div>
               ))}
@@ -82,7 +92,7 @@ const SnipeHistory: React.FC<SnipeHistoryProps> = ({ snipes, onInspect }) => {
           </div>
         ))}
       </div>
-    </div>
+    </section>
   );
 };
 
