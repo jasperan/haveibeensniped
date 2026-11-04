@@ -31,4 +31,3 @@ try {
     messageElement.textContent = error instanceof Error ? error.message : 'Unknown error';
   }
 }
-import './src/scout.css';

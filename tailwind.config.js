@@ -10,14 +10,27 @@ export default {
   theme: {
     extend: {
       colors: {
-        indigo: { 50:'#f6f2e6',100:'#eee5c9',200:'#ddd0a8',300:'#d5c18c',400:'#cbb77d',500:'#ad9557',600:'#827039',700:'#62542e',800:'#423c28',900:'#2e2d21',950:'#1b2118' },
+        // One slate ramp for the desk. Surfaces stay neutral.
+        background: "#0c0d10",
+        surface: "#121318",
+        raised: "#1a1c22",
+        line: "#262932",
+        ink: "#f0f1f3",
+        ink2: "#a2a7b2",
+        ink3: "#767b87",
+        // The single accent: a selected row, a score above the threshold.
+        accent: "#6366f1",
+        // The charge: high attention.
+        alert: "#e5484d",
+        positive: "#4cc38a",
+        negative: "#e5484d",
       },
       fontFamily: {
-        sans: ['Outfit', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+        sans: ['"Inter Tight"', 'Inter', 'system-ui', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
       },
       fontSize: {
-        '2xs': ['0.625rem', { lineHeight: '1rem', letterSpacing: '0.15em' }],
+        '2xs': ['0.6875rem', { lineHeight: '1rem' }],
       },
     },
   },

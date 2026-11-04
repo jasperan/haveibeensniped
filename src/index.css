@@ -4,12 +4,13 @@
 
 html {
   scroll-behavior: smooth;
+  color-scheme: dark;
 }
 
 body {
-  font-family: 'Outfit', system-ui, sans-serif;
-  background-color: #0a0a0f;
-  color: #fafafa;
+  font-family: 'Inter Tight', Inter, system-ui, sans-serif;
+  background-color: #0c0d10;
+  color: #f0f1f3;
   margin: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -19,63 +20,32 @@ body {
   min-height: 100dvh;
 }
 
-/* Subtle noise overlay for texture */
-#root::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  pointer-events: none;
-  opacity: 0.025;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-repeat: repeat;
-  background-size: 256px 256px;
-}
-
-/* Glass card with tinted shadow */
-.glass-card {
-  background: rgba(20, 20, 28, 0.55);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(39, 39, 50, 0.5);
-  box-shadow: 0 4px 24px -4px rgba(10, 10, 20, 0.6);
-}
-
-.glass-card:hover {
-  box-shadow: 0 8px 32px -4px rgba(10, 10, 20, 0.7);
-}
-
-/* Gradient border — used on selected/highlighted cards */
-.gradient-border {
-  position: relative;
-  background: #14141c;
-  border-radius: 0.75rem;
-}
-
-.gradient-border::before {
-  content: "";
-  position: absolute;
-  inset: -1px;
-  background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
-  border-radius: inherit;
-  z-index: -1;
-  opacity: 0.4;
-}
-
-/* Page background gradient — deep indigo vignette */
-.league-gradient {
-  background: linear-gradient(160deg, #141428 0%, #0a0a0f 40%, #0a0a0f 100%);
-}
-
-/* Micro-label utility */
 @layer components {
-  .label-micro {
-    @apply text-2xs font-bold uppercase tracking-[0.2em];
+  /* Ledger entry: one surface step and a hairline. */
+  .panel {
+    @apply bg-surface border border-line rounded-xl;
+  }
+
+  .case-line {
+    @apply font-mono text-2xs text-ink3 tabular-nums;
+  }
+
+  .input-field {
+    @apply w-full bg-raised border border-line rounded-lg px-3 py-2 text-sm text-ink outline-none transition-colors placeholder:text-ink3 focus:border-ink3;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 h-10 px-4 bg-ink text-[#0c0d10] rounded-lg text-sm font-medium transition-colors hover:bg-white active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  .btn-quiet {
+    @apply inline-flex items-center justify-center gap-2 h-10 px-4 bg-raised border border-line text-ink2 rounded-lg text-sm font-medium transition-colors hover:text-ink hover:border-ink3 active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed;
   }
 }
 
 /* Focus ring for keyboard nav */
 :focus-visible {
-  outline: 2px solid #6366f1;
+  outline: 2px solid rgba(240, 241, 243, 0.45);
   outline-offset: 2px;
 }
 
@@ -89,16 +59,16 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(63, 63, 80, 0.5);
+  background: rgba(118, 123, 135, 0.4);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(63, 63, 80, 0.8);
+  background: rgba(118, 123, 135, 0.7);
 }
 
 /* Selection color */
 ::selection {
   background: rgba(99, 102, 241, 0.3);
-  color: white;
+  color: #ffffff;
 }

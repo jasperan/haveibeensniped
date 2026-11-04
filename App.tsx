@@ -6,6 +6,7 @@ import MemoryCenter from './components/MemoryCenter';
 import RepeatPlayerBoard from './components/RepeatPlayerBoard';
 import RepeatPlayerDetail from './components/RepeatPlayerDetail';
 import SnipeHistory from './components/SnipeHistory';
+import { AlertIcon, BarsIcon, BoltIcon } from './components/Icons';
 import {
   RiotService,
   mapScanCurrentGameToCurrentGame,
@@ -32,9 +33,9 @@ const getLiveClientBanner = (
 ) => {
   if (!liveClientStatus.connected) {
     return {
-      accentClassName: 'bg-zinc-500',
-      badgeClassName: 'border-zinc-700 bg-zinc-900 text-zinc-300',
-      text: 'Live Client offline on this machine.',
+      accentClassName: 'bg-ink3',
+      badgeClassName: 'border-line bg-raised text-ink2',
+      text: 'offline on this machine.',
     };
   }
 
@@ -42,7 +43,7 @@ const getLiveClientBanner = (
     return {
       accentClassName: 'bg-emerald-500',
       badgeClassName: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
-      text: 'Live Client connected. Waiting for a game.',
+      text: 'connected, waiting for a game.',
     };
   }
 
@@ -52,7 +53,7 @@ const getLiveClientBanner = (
     return {
       accentClassName: 'bg-amber-500',
       badgeClassName: 'border-amber-500/30 bg-amber-500/10 text-amber-300',
-      text: `Found local player ${riotId}, but no saved tracked profile exists yet. Run one manual scan first.`,
+      text: `found ${riotId}, but no saved profile exists yet. Run one manual scan first.`,
     };
   }
 
@@ -60,7 +61,7 @@ const getLiveClientBanner = (
     return {
       accentClassName: 'bg-indigo-500',
       badgeClassName: 'border-indigo-500/30 bg-indigo-500/10 text-indigo-300',
-      text: `Auto-scanning the current session for ${riotId}.`,
+      text: `auto-scanning the current session for ${riotId}.`,
     };
   }
 
@@ -68,7 +69,7 @@ const getLiveClientBanner = (
     return {
       accentClassName: 'bg-indigo-500',
       badgeClassName: 'border-indigo-500/30 bg-indigo-500/10 text-indigo-300',
-      text: `Auto-scanned current session for ${riotId}.`,
+      text: `auto-scanned the current session for ${riotId}.`,
     };
   }
 
@@ -76,14 +77,14 @@ const getLiveClientBanner = (
     return {
       accentClassName: 'bg-emerald-500',
       badgeClassName: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
-      text: `Auto-scan ready for ${riotId}.`,
+      text: `ready to auto-scan for ${riotId}.`,
     };
   }
 
   return {
-    accentClassName: 'bg-zinc-500',
-    badgeClassName: 'border-zinc-700 bg-zinc-900 text-zinc-300',
-    text: 'Live Client connected.',
+    accentClassName: 'bg-ink3',
+    badgeClassName: 'border-line bg-raised text-ink2',
+    text: 'connected.',
   };
 };
 
@@ -312,66 +313,48 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen league-gradient flex flex-col">
+    <div className="flex min-h-screen flex-col bg-background">
       <Navbar />
 
-      <main className="w-full min-w-0 max-w-7xl mx-auto pb-24 relative flex-grow">
-        {/* Background decorations — single-hue indigo */}
-        <div className="absolute top-0 right-0 -z-10 w-[500px] h-[500px] bg-indigo-600/8 blur-[140px] rounded-full"></div>
-        <div className="absolute top-60 left-0 -z-10 w-[350px] h-[350px] bg-indigo-800/6 blur-[120px] rounded-full"></div>
-
+      <main className="mx-auto w-full min-w-0 max-w-6xl flex-grow px-4 pb-24">
         <Hero onSearch={handleSearch} onTryDemo={() => void handleDemo()} isLoading={loading} />
 
-        <div className="px-4 mb-8">
-          <div className="mx-auto max-w-4xl rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4 backdrop-blur-sm">
-            <div className="flex items-start gap-4">
-              <div className={`mt-1.5 h-3 w-3 rounded-full ${liveClientBanner.accentClassName}`}></div>
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className={`rounded-full border px-3 py-1 text-2xs font-bold uppercase tracking-[0.2em] ${liveClientBanner.badgeClassName}`}>
-                    Live Client
-                  </span>
-                  {liveClientStatus.activePlayer?.riotId && (
-                    <span className="text-2xs font-bold uppercase tracking-[0.2em] text-zinc-500">
-                      {liveClientStatus.activePlayer.riotId}
-                    </span>
-                  )}
-                </div>
-                <p className="mt-3 text-sm leading-relaxed text-zinc-300">
-                  {liveClientBanner.text}
-                </p>
-              </div>
-            </div>
-          </div>
+        {/* Live client: one line, static indicator, no pulse */}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-y border-line py-3">
+          <span className={`h-1.5 w-1.5 rounded-full ${liveClientBanner.accentClassName}`} />
+          <span className="case-line">Live client</span>
+          <span className="text-[13px] text-ink2">
+            {liveClientStatus.activePlayer?.riotId && (
+              <span className="mr-2 text-ink">{liveClientStatus.activePlayer.riotId}</span>
+            )}
+            {liveClientBanner.text}
+          </span>
         </div>
 
         {error && (
-          <div className="max-w-3xl mx-auto px-4 animate-in fade-in zoom-in duration-300">
-            <div className="bg-rose-500/10 border border-rose-500/50 p-6 rounded-2xl flex items-center gap-4 text-rose-200">
-              <svg className="w-8 h-8 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-              <div className="font-medium">{error}</div>
-            </div>
+          <div className="mt-6 flex items-start gap-3 border-l-2 border-alert bg-surface px-4 py-3">
+            <AlertIcon size={16} className="mt-0.5 shrink-0 text-alert" />
+            <p className="text-[13px] leading-relaxed text-ink2" role="alert">{error}</p>
           </div>
         )}
 
         {!error && currentGame && (
-          <div className="px-4">
+          <div>
             {lastScanSource === 'demo' && (
-              <div className="max-w-3xl mx-auto mb-6 rounded-2xl border border-indigo-500/30 bg-indigo-500/10 p-4 text-sm leading-relaxed text-indigo-200">
-                You are viewing demo data generated locally so you can test the full product flow without
-                a real Riot API key or live lobby.
+              <div className="mt-6 border-l-2 border-accent bg-surface px-4 py-3 text-[13px] leading-relaxed text-ink2">
+                You are looking at demo data generated locally, so you can follow the whole flow without a
+                Riot API key or a live lobby.
               </div>
             )}
-            <div className="max-w-2xl mx-auto bg-zinc-900/80 border border-zinc-800 p-4 rounded-2xl flex items-center justify-between mb-8 backdrop-blur-sm">
-              <div className="flex items-center gap-4">
-                <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
-                <div className="text-sm font-bold text-zinc-300 uppercase tracking-widest">
-                  Live Game Detected: <span className="text-indigo-400">{currentGame.gameMode}</span>
-                </div>
+
+            <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3">
+              <div className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+                <span className="text-[13px] text-ink">
+                  Live game · <span className="text-ink2">{currentGame.gameMode}</span>
+                </span>
               </div>
-              <div className="text-xs font-mono text-zinc-500">
-                LOBBY ID: #{currentGame.gameId}
-              </div>
+              <span className="case-line">Lobby #{currentGame.gameId}</span>
             </div>
 
             <LobbyTracker
@@ -396,57 +379,50 @@ const App: React.FC = () => {
         <MemoryCenter summary={memorySummary} loading={memoryLoading} />
 
         {!currentGame && !error && !loading && (
-          <div className="px-4 max-w-4xl mx-auto mt-16 space-y-4">
+          <div className="mt-16 grid gap-x-8 gap-y-6 border-t border-line pt-8 md:grid-cols-3">
             {[
               {
-                icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />,
+                Icon: BoltIcon,
                 title: 'Loading screen check',
-                desc: 'Scan your lobby while the game loads. No waiting for match history to update.',
+                desc: 'Scan the lobby while the game loads. No waiting for match history to update.',
               },
               {
-                icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />,
+                Icon: BarsIcon,
                 title: '100-match depth',
-                desc: 'Cross-references every lobby participant against your last 100 games.',
+                desc: 'Every lobby participant is checked against your last 100 games.',
               },
               {
-                icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />,
+                Icon: AlertIcon,
                 title: 'Risk scoring',
-                desc: 'Tracks win/loss records, repeat frequency, and flags suspicious patterns automatically.',
+                desc: 'Win and loss records, repeat frequency, and the patterns worth a second look.',
               },
-            ].map((feature) => (
-              <div key={feature.title} className="glass-card rounded-2xl border-zinc-800/40 p-5 flex items-start gap-5 transition-colors hover:border-zinc-700/60 group">
-                <div className="w-10 h-10 shrink-0 bg-indigo-600/15 rounded-xl flex items-center justify-center text-indigo-400 group-hover:bg-indigo-600/25 transition-colors">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">{feature.icon}</svg>
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-zinc-100">{feature.title}</h3>
-                  <p className="mt-1 text-sm text-zinc-500 leading-relaxed">{feature.desc}</p>
-                </div>
+            ].map(({ Icon, title, desc }) => (
+              <div key={title}>
+                <Icon size={16} className="text-ink3" />
+                <h3 className="mt-3 text-[14px] text-ink">{title}</h3>
+                <p className="mt-1 text-[13px] leading-relaxed text-ink3">{desc}</p>
               </div>
             ))}
           </div>
         )}
       </main>
 
-      <footer className="py-10 px-4 border-t border-zinc-800/40">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-2">
-              <div className="w-5 h-5 bg-zinc-800 rounded flex items-center justify-center">
-                <div className="w-2.5 h-2.5 bg-zinc-500 rounded-sm rotate-45"></div>
-              </div>
-              <span className="font-semibold text-sm text-zinc-500 tracking-tight">
-                HAVEIBEEN<span className="text-zinc-600">SNIPED</span>
-              </span>
-            </div>
-            <div className="flex flex-col items-center md:items-end gap-2">
-              <div className="text-zinc-500 text-sm">
-                Built by <a href="https://github.com/jasperan" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300 transition-colors">jasperan</a>
-              </div>
-              <p className="text-zinc-600 text-2xs max-w-md text-center md:text-right font-medium">
-                Not endorsed by Riot Games. Doesn't reflect the views of Riot Games or anyone involved in producing League of Legends.
-              </p>
-            </div>
+      <footer className="border-t border-line px-4 py-8">
+        <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 md:flex-row md:items-center">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rotate-45 rounded-[2px] border border-ink3" aria-hidden="true" />
+            <span className="text-[13px] text-ink3">
+              Have I Been <span className="text-line">Sniped?</span>
+            </span>
+          </div>
+          <div className="flex flex-col items-start gap-2 md:items-end">
+            <span className="text-[12px] text-ink3">
+              Built by <a href="https://github.com/jasperan" target="_blank" rel="noopener noreferrer" className="text-ink2 underline decoration-line underline-offset-4 transition-colors hover:text-ink">jasperan</a>
+            </span>
+            <p className="max-w-md text-[11px] leading-relaxed text-ink3">
+              Not endorsed by Riot Games. Does not reflect the views of Riot Games or anyone involved in
+              producing League of Legends.
+            </p>
           </div>
         </div>
       </footer>
