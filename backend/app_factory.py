@@ -6,7 +6,7 @@ from flask_cors import CORS
 from demo_data import DemoRiotClient
 from live_client import LiveClient, disconnected_status
 from scan_service import ScanService
-from utils import DEFAULT_RUNTIME_CONFIG
+from utils import DEFAULT_RUNTIME_CONFIG, REGION_TO_REGIONAL
 
 
 DEFAULT_CORS_ORIGINS = list(DEFAULT_RUNTIME_CONFIG["CORS_ORIGINS"])
@@ -71,6 +71,9 @@ def create_app(
 
         if not game_name or not tag_line or not region:
             return jsonify({"error": "Missing gameName, tagLine, or region"}), 400
+
+        if not isinstance(region, str) or region.upper() not in REGION_TO_REGIONAL:
+            return jsonify({"error": "Unknown region"}), 400
 
         if app.extensions.get("scan_service") is None:
             return jsonify({"error": "Riot API is not configured"}), 503

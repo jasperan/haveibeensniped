@@ -108,3 +108,31 @@ def test_scan_endpoint_requires_configured_riot_client(tmp_path):
 
     assert response.status_code == 503
     assert "Riot API is not configured" in response.get_json()["error"]
+
+
+def test_scan_endpoint_rejects_unknown_region_before_scanning(tmp_path):
+    class ExplodingScanService:
+        def run_manual_scan(self, game_name, tag_line, region):
+            raise AssertionError("scan must not run for an invalid region")
+
+    app = create_app(
+        {"DATABASE_PATH": str(tmp_path / "test.db"), "API_CONFIGURED": True},
+        scan_service=ExplodingScanService(),
+    )
+    client = app.test_client()
+    for region in ("attacker.example/", "attacker.example:8443/", "a@b/", 5):
+        response = client.post(
+            "/api/scan", json={"gameName": "A", "tagLine": "B", "region": region}
+        )
+        assert response.status_code == 400
+        assert response.get_json()["error"] == "Unknown region"
+
+
+def test_get_platform_endpoint_only_returns_known_platforms():
+    import pytest
+    from utils import get_platform_endpoint
+
+    assert get_platform_endpoint("NA1") == "na1"
+    assert get_platform_endpoint("euw1") == "euw1"
+    with pytest.raises(ValueError):
+        get_platform_endpoint("attacker.example/")

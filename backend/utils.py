@@ -101,5 +101,8 @@ def get_regional_endpoint(platform: str) -> str:
 
 
 def get_platform_endpoint(platform: str) -> str:
-    """Return the lowercased platform code used for platform-routed endpoints."""
-    return platform.lower()
+    """Return the validated platform code used for platform-routed endpoints."""
+    key = str(platform).upper()
+    if key not in REGION_TO_REGIONAL:
+        raise ValueError("Unknown region")
+    return key.lower()
